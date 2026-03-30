@@ -18,3 +18,4 @@ All notable changes to this project will be documented in this file.
 - **Shared utilities:** `retryWithBackoff` (exponential backoff with jitter), `autoBatch`
 - Dual ESM/CJS build with full TypeScript declarations
 - Zero production dependencies
+- Apache-2.0 license
