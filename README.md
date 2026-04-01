@@ -183,7 +183,7 @@ const provider = createOpenAICompatibleProvider({
 
 ### Vector Math
 
-Core operations on embedding vectors. All functions validate inputs and throw `ValidationError` on empty vectors or dimension mismatches.
+Core operations on embedding vectors. These are the low-level building blocks for comparing, combining, and transforming vectors. All functions validate inputs and throw `ValidationError` on empty vectors or dimension mismatches.
 
 | Function | Description | Example |
 |----------|-------------|---------|
@@ -200,11 +200,23 @@ Core operations on embedding vectors. All functions validate inputs and throw `V
 
 `truncateDimensions` also accepts batches (`number[][]`) and preserves the input shape.
 
+#### When to use each
+
+- **`cosineSimilarity`** -- The go-to for checking if two pieces of text are about the same thing. Use it in recommendation engines ("users who liked X also liked Y") or to verify if a generated answer is on-topic relative to the source document.
+- **`dotProduct`** -- Some models (like OpenAI's `text-embedding-3-*` with `dimensions` truncation) are optimized for dot product ranking. Check your model's docs -- if it says "use dot product," use this instead of cosine.
+- **`euclideanDistance`** -- Useful for anomaly detection: if a new data point's embedding is far from the cluster center, flag it as an outlier. Also commonly used in k-means style clustering.
+- **`manhattanDistance`** -- Similar to euclidean but cheaper to compute and more robust to noisy dimensions. A good choice when embeddings are high-dimensional or you're running on constrained hardware.
+- **`normalize`** -- Call this before storing embeddings in a database that only supports dot product search (e.g., some Postgres pgvector configs). After normalization, dot product equals cosine similarity.
+- **`magnitude`** -- Sanity-check that a model is returning valid vectors. A magnitude of 0 or near-infinity means something went wrong. Also useful to verify whether embeddings are already normalized (magnitude ≈ 1.0).
+- **`add` / `subtract`** -- Perform analogy-style vector arithmetic ("king − man + woman ≈ queen"). In practice, subtract the embedding of "negative sentiment" from a mixed-tone corpus to bias search toward positive content.
+- **`scale`** -- Weight a particular embedding before combining it with others. For example, scale a title embedding by 2x before averaging with the body embedding, since titles carry more semantic signal.
+- **`truncateDimensions`** -- OpenAI's Matryoshka-trained models let you drop from 1536 dims to 256 with minimal quality loss, saving 80%+ storage. Call this after embedding to shrink vectors for cheaper storage and faster search.
+
 ---
 
 ### Search
 
-Find, rank, filter, and deduplicate embeddings by similarity. All search functions support four metrics via `{ metric: 'cosine' | 'dot' | 'euclidean' | 'manhattan' }` and optional `labels` for tracking source data.
+Find, rank, filter, and deduplicate embeddings by similarity. This is where most applications start -- "given a query, find the best matches." All search functions support four metrics via `{ metric: 'cosine' | 'dot' | 'euclidean' | 'manhattan' }` and optional `labels` for tracking source data.
 
 ```typescript
 import { topK, topKMulti, aboveThreshold, deduplicate, rankBySimilarity, similarityMatrix } from 'embedding-utils';
@@ -215,6 +227,10 @@ const labels = ['doc-a', 'doc-b', 'doc-c', 'doc-d'];
 ```
 
 #### Top-K search
+
+Use `topK` for **semantic search and RAG pipelines**. A user types "how do I reset my password" into your support chatbot -- embed their question, then `topK` against your knowledge base to find the most relevant help articles to feed to the LLM.
+
+Use `topKMulti` for **batch search** -- e.g., 50 customer questions came in overnight and you want to find matching FAQ articles for all of them in one call instead of looping.
 
 ```typescript
 const results = topK(query, corpus, 2, { labels });
@@ -228,6 +244,10 @@ const batchResults = topKMulti([query, [0, 1, 0]], corpus, 2);
 
 #### Threshold filtering and deduplication
 
+Use `aboveThreshold` for **intent matching** where you only want confident matches. A voice assistant matching speech to known commands should only act on matches above 0.85 -- anything below is "I don't understand." Unlike `topK`, this returns a variable number of results (could be zero).
+
+Use `deduplicate` for **content deduplication**. You scraped 10,000 product listings and many are reposts with slightly different wording. Deduplicate at 0.95 similarity to collapse near-identical listings, keeping the first occurrence.
+
 ```typescript
 // Find all embeddings above a similarity threshold
 const matches = aboveThreshold(query, corpus, 0.8, { labels });
@@ -239,6 +259,10 @@ const unique = deduplicate(corpus, 0.95, { labels });
 ```
 
 #### Ranking and similarity matrix
+
+Use `rankBySimilarity` for **recommendation feeds**. A user just read an article -- rank your entire library by relevance to build a "more like this" feed. Unlike `topK`, this returns scores for *every* item.
+
+Use `similarityMatrix` for **content audits and overlap visualization**. You have 100 support articles and want to find redundant documentation -- the NxN matrix powers a heatmap showing which articles cover the same ground.
 
 ```typescript
 // Rank entire corpus by similarity
@@ -254,7 +278,9 @@ const matrix = similarityMatrix(corpus);
 
 ### Clustering
 
-Group embeddings using greedy agglomerative clustering. Iterate embeddings, assign each to the most similar existing cluster (or create a new one), filter by size, merge if needed.
+Group similar items together without predefined categories. Useful for discovering natural topic groupings in unlabeled data -- e.g., auto-tagging thousands of support tickets into topics like "billing issues," "shipping delays," and "app crashes" without defining those categories upfront.
+
+Uses greedy agglomerative clustering: iterate embeddings, assign each to the most similar existing cluster (or create a new one), filter by size, merge if needed.
 
 ```typescript
 import { clusterEmbeddings, getPreset, cohesionScore, silhouetteScore, assignToCluster, mergeClusters } from 'embedding-utils';
@@ -274,7 +300,7 @@ const clusters = clusterEmbeddings(embeddings, {
 
 #### Presets
 
-Three built-in presets for common scenarios:
+Three built-in presets so you don't have to guess threshold values. Use `'high-precision'` for tight groups (e.g., near-duplicate detection), `'balanced'` for general topic discovery, and `'performance'` for fast broad groupings on large datasets.
 
 | Preset | Threshold | Min Size | Max Clusters | Best for |
 |--------|:---------:|:--------:|:------------:|----------|
@@ -288,6 +314,10 @@ const clusters = clusterEmbeddings(embeddings, getPreset('balanced'));
 
 #### Quality metrics
 
+Use `cohesionScore` to check if an individual cluster is internally consistent -- a low score (e.g., 0.4) means the cluster is a grab-bag of unrelated items and you should tighten the threshold.
+
+Use `silhouetteScore` to evaluate overall clustering quality. A score near 1.0 means clusters are well-separated; near 0 means items could belong to any cluster. Use this to tune your `similarityThreshold`.
+
 ```typescript
 // Internal cluster quality (0-1, higher = tighter)
 const cohesion = cohesionScore(clusters[0]);
@@ -297,6 +327,10 @@ const quality = silhouetteScore(clusters);
 ```
 
 #### Operations
+
+Use `assignToCluster` for **live classification** -- when a new support ticket or document arrives, classify it into an existing cluster without re-clustering everything. Returns `-1` if it doesn't fit any group (an outlier / new topic).
+
+Use `mergeClusters` for **manual refinement** -- after auto-clustering, you notice "password reset" and "login issues" ended up as separate clusters but your team treats them as one. Merge them programmatically.
 
 ```typescript
 // Classify a new embedding into existing clusters
@@ -311,28 +345,43 @@ const merged = mergeClusters(clusters[0], clusters[1]);
 
 ### Aggregation
 
-Combine multiple embeddings into a single vector.
+Combine multiple embeddings into a single representative vector. Common use case: a 20-page PDF gets split into 40 chunks, each with its own embedding. Aggregate them into one "document embedding" for coarse-grained search (find relevant documents first, then drill into chunks).
 
 ```typescript
 import { averageEmbeddings, weightedAverage, incrementalAverage, centroid, maxPooling, minPooling, combineEmbeddings } from 'embedding-utils';
+```
 
-// Element-wise average
+**`averageEmbeddings`** -- Simple element-wise mean. Use when all inputs carry equal weight, such as averaging chunk embeddings to represent an entire document.
+
+```typescript
 averageEmbeddings([[1, 0], [0, 1]]); // => [0.5, 0.5]
+```
 
-// Weighted average (give more importance to certain embeddings)
+**`weightedAverage`** -- Give more importance to certain embeddings. Useful for hybrid representations: embed a product's title, description, and reviews separately, then weight the title 3x and description 2x to emphasize what the product *is* over what people *say*.
+
+```typescript
 weightedAverage([[1, 0], [0, 1]], [3, 1]); // => [0.75, 0.25]
+```
 
-// Streaming / incremental average (no need to store all prior embeddings)
+**`incrementalAverage`** -- Streaming / running average without storing all prior embeddings. Use when processing a firehose of data (e.g., tweets, logs, sensor readings) and you need a running mean with only 1 vector in memory.
+
+```typescript
 let avg = [1, 2, 3];
 avg = incrementalAverage(avg, [4, 5, 6], 1); // count = embeddings already averaged
 avg = incrementalAverage(avg, [7, 8, 9], 2);
 // Numerically equivalent to averageEmbeddings([[1,2,3], [4,5,6], [7,8,9]])
+```
 
-// Element-wise max/min pooling
+**`maxPooling` / `minPooling`** -- Element-wise max or min across vectors. Max pooling captures the "strongest signal" across chunks -- if any chunk mentions "urgent," that signal is preserved. Min pooling captures the weakest, useful for detecting what's *missing* across a set.
+
+```typescript
 maxPooling([[1, 0, 3], [2, 5, 1]]); // => [2, 5, 3]
 minPooling([[1, 0, 3], [2, 5, 1]]); // => [1, 0, 1]
+```
 
-// Embed multiple texts and aggregate in one call
+**`combineEmbeddings`** -- Embed multiple texts and aggregate in one call. A convenient one-liner for creating a single embedding from multi-field entities (e.g., combine a user's bio, interests, and recent posts into one "user profile" vector).
+
+```typescript
 const combined = await combineEmbeddings(['hello', 'world'], provider);
 const pooled = await combineEmbeddings(['hello', 'world'], provider, { aggregate: maxPooling });
 ```
@@ -341,7 +390,7 @@ const pooled = await combineEmbeddings(['hello', 'world'], provider, { aggregate
 
 ### Quantization
 
-Reduce embedding precision for storage and memory efficiency.
+Reduce embedding precision for storage and memory efficiency. Essential when scaling to millions of vectors -- 10M embeddings at 1536 dims takes ~57 GB as float32, but only ~14 GB as int8, fitting on a single machine with less than 1% accuracy loss.
 
 | Type | Bits | Size vs float32 | Input Range | Precision Loss | Best for |
 |------|:----:|:---------------:|:-----------:|:--------------:|----------|
@@ -349,6 +398,10 @@ Reduce embedding precision for storage and memory efficiency.
 | `int8` | 8 | 25% | [-1, 1] | ~0.8% | Normalized embeddings |
 | `uint8` | 8 | 25% | [0, 1] | ~0.4% | Positive embeddings |
 | `binary` | 1 | 3% | Any | High (sign only) | Extreme compression, candidate filtering |
+
+**`quantize` / `dequantize`** -- Convert between full-precision and compressed representations. Use `int8` or `uint8` for general storage savings. Use `binary` for a two-stage search pipeline: quickly find the top 1,000 candidates with binary similarity, then re-rank those candidates with full-precision vectors. This is how production systems handle billion-scale data.
+
+**`getQuantizationInfo`** -- Inspect a quantization type's range and precision before choosing. Helps you decide between `int8` (needs normalized [-1, 1] input) vs `uint8` (needs [0, 1] input).
 
 ```typescript
 import { quantize, dequantize, getQuantizationInfo } from 'embedding-utils';
@@ -372,7 +425,7 @@ getQuantizationInfo('int8');
 
 ### Storage
 
-Serialize embeddings for persistence and cache frequently used results.
+Serialize embeddings for persistence and cache frequently used results. Use these to avoid re-calling expensive embedding APIs -- pre-compute once, store, and reload on startup.
 
 #### Serialization
 
@@ -383,6 +436,8 @@ Three formats with different trade-offs:
 | `json` | `string` | Largest | Human-readable, debugging, APIs |
 | `binary` | `Uint8Array` | Smallest | File storage, binary protocols |
 | `base64` | `string` | ~33% > binary | Text-safe transmission (HTTP, databases) |
+
+Use `binary` for writing embeddings to disk files -- smallest size, fastest I/O. Use `base64` when you need to store in a Postgres `TEXT` column or send over a JSON API. Use `json` for debugging and inspection where you want to see the actual numbers.
 
 ```typescript
 import { serialize, deserialize } from 'embedding-utils';
@@ -398,7 +453,9 @@ const restored = deserialize(json, 'json');     // number[][] (identical to orig
 
 #### LRU Cache
 
-In-memory cache with configurable size limits and TTL. Implements the `CacheProvider` interface for pluggability.
+In-memory cache with configurable size limits and TTL. Use this to avoid redundant API calls -- users in your app often search similar queries, and caching means "how to reset password" doesn't hit the OpenAI API again for 60 seconds.
+
+Implements the `CacheProvider` interface for pluggability. The async interface means you can later swap in Redis or SQLite without changing application code.
 
 ```typescript
 import { createLRUCache } from 'embedding-utils';
@@ -412,13 +469,17 @@ await cache.delete('doc-1');
 await cache.clear();
 ```
 
-The async interface allows swapping in custom backends (Redis, SQLite, etc.) by implementing `CacheProvider`.
-
 ---
 
 ### Model Management
 
-Manage local ONNX models for the local provider.
+Manage locally-downloaded ONNX models for the local provider. Only relevant if you're using `createLocalProvider()` for offline / API-key-free embedding.
+
+- **`downloadModel`** -- Pre-download a model so it's ready at runtime. Include this in your Docker build or CI setup to bake the model into the image and avoid a cold-start download on first request.
+- **`listModels`** -- See which models are cached locally. Useful for admin dashboards showing disk usage.
+- **`deleteModel`** -- Remove old model versions after upgrading to a newer one, or clean up models you no longer use.
+- **`setModelPath`** -- Point the model cache to a custom directory. In a shared server environment, use a shared NFS mount so multiple workers don't each download their own copy.
+- **`getModelInfo`** -- Check a model's dimensions (384 vs 768) and size (22M vs 109M) before downloading, to pick the right trade-off between inference speed and embedding quality.
 
 ```typescript
 import { downloadModel, listModels, deleteModel, setModelPath, getModelInfo, MODEL_REGISTRY } from 'embedding-utils';
