@@ -6,13 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.0] - 2026-04-03
 
-### Breaking Changes
-
-- **Binary serialization format v2** -- New binary format is now the default. v1 data is auto-detected and read transparently by `deserialize()`, but newly serialized data uses v2.
-- **`SearchOptions` replaces inline types** -- Search functions now use the `SearchOptions` interface instead of inline `{ metric?, labels? }` parameters.
-- **Optional peer dependency bumped to `@huggingface/transformers ^4.0.0`** -- Users on v3 should upgrade. The library tests compatibility with both.
-- **Domain error classes replace plain `Error`** -- All errors now extend `EmbeddingUtilsError` with specific subclasses (`ValidationError`, `DimensionMismatchError`, `ProviderError`, `ModelNotFoundError`). Code catching generic `Error` will still work, but you can now catch more precisely.
-
 ### Bug Fixes
 
 - Unified duplicated `computeScore` metric dispatch into a single internal module
