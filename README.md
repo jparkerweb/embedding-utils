@@ -2,6 +2,8 @@
 
 **Vector math, similarity search, clustering, and multi-provider embedding generation -- zero dependencies, full TypeScript, one import.**
 
+<img src="https://raw.githubusercontent.com/jparkerweb/embedding-utils/refs/heads/main/embedding-utils.jpg" alt="embedding-utils" style="max-width: 885px;" />
+
 Build semantic search, RAG pipelines, recommendation engines, duplicate detection, and document clustering without pulling in heavy ML frameworks or vector databases.
 
 ---
