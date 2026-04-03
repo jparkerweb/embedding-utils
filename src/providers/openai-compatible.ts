@@ -4,8 +4,9 @@ import type {
   EmbedOptions,
   OpenAICompatibleConfig,
 } from '../types';
-import { ProviderError } from '../types';
-import { retryWithBackoff, autoBatch } from './shared';
+import { ProviderError, ValidationError } from '../types';
+import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
+import type { OpenAIEmbeddingResponse } from './types';
 
 const DEFAULT_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_MAX_BATCH_SIZE = 2048;
@@ -44,6 +45,7 @@ export function createOpenAICompatibleProvider(
     batch: string[],
     signal?: AbortSignal,
   ): Promise<{ embeddings: number[][]; tokens: number }> {
+    const fetchSignal = createTimeoutSignal(config.timeout, signal);
     const result = await retryWithBackoff(
       async () => {
         const body: Record<string, unknown> = {
@@ -61,24 +63,45 @@ export function createOpenAICompatibleProvider(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(body),
-          signal,
+          signal: fetchSignal,
         });
 
         if (!response.ok) {
+          let body: string;
+          try {
+            body = await response.text();
+          } catch {
+            body = response.statusText;
+          }
           throw new ProviderError(
-            `HTTP ${response.status}: ${response.statusText}`,
+            `HTTP ${response.status}: ${body}`,
             providerName,
             response.status,
           );
         }
 
-        return response.json();
+        try {
+          return await response.json() as OpenAIEmbeddingResponse;
+        } catch {
+          throw new ProviderError(
+            'Failed to parse API response',
+            providerName,
+            response.status,
+          );
+        }
       },
       retryConfig,
       signal,
     );
 
-    const embeddings = result.data.map((d: any) => d.embedding);
+    if (!Array.isArray(result.data) || !result.data[0]?.embedding) {
+      throw new ProviderError(
+        'Unexpected API response structure from openai-compatible',
+        providerName,
+      );
+    }
+
+    const embeddings = result.data.map((d) => d.embedding);
     const tokens = result.usage?.total_tokens ?? 0;
     return { embeddings, tokens };
   }
@@ -92,27 +115,37 @@ export function createOpenAICompatibleProvider(
       options?: EmbedOptions,
     ): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
-      let allEmbeddings: number[][];
-      let totalTokens = 0;
-
-      if (inputs.length <= maxBatchSize) {
-        const result = await embedBatch(inputs, options?.signal);
-        allEmbeddings = result.embeddings;
-        totalTokens = result.tokens;
-      } else {
-        allEmbeddings = await autoBatch(inputs, maxBatchSize, async (batch) => {
-          const result = await embedBatch(batch, options?.signal);
-          totalTokens += result.tokens;
-          return result.embeddings;
-        });
+      for (const text of inputs) {
+        if (text.trim().length === 0) {
+          throw new ValidationError('Cannot embed empty string');
+        }
       }
 
-      return {
-        embeddings: allEmbeddings,
-        model: config.model,
-        dimensions: allEmbeddings[0]?.length ?? 0,
-        usage: { tokens: totalTokens },
-      };
+      try {
+        let allEmbeddings: number[][];
+        let totalTokens = 0;
+
+        if (inputs.length <= maxBatchSize) {
+          const result = await embedBatch(inputs, options?.signal);
+          allEmbeddings = result.embeddings;
+          totalTokens = result.tokens;
+        } else {
+          allEmbeddings = await autoBatch(inputs, maxBatchSize, async (batch) => {
+            const result = await embedBatch(batch, options?.signal);
+            totalTokens += result.tokens;
+            return result.embeddings;
+          });
+        }
+
+        return {
+          embeddings: allEmbeddings,
+          model: config.model,
+          dimensions: allEmbeddings[0]?.length ?? 0,
+          usage: { tokens: totalTokens },
+        };
+      } catch (error) {
+        wrapTimeoutError(error, providerName, config.timeout);
+      }
     },
   };
 }

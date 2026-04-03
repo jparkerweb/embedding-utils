@@ -91,6 +91,7 @@ export async function listModels(cacheDir?: string): Promise<ModelInfo[]> {
         models.push({
           id: modelId,
           dimensions: 0,
+          maxTokens: 0,
           description: 'Unknown model',
         });
       }

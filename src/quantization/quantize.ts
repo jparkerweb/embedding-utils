@@ -1,3 +1,5 @@
+import { ValidationError } from '../types';
+
 type QuantizationType = 'fp16' | 'int8' | 'uint8' | 'binary';
 
 function clamp(value: number, min: number, max: number): number {
@@ -76,6 +78,10 @@ function float32ToFloat16(value: number): number {
  * @example
  * quantize([0.5, -0.3, 0.8], 'int8'); // Int8Array [64, -38, 102]
  */
+export function quantize(embedding: number[], type: 'fp16'): Float32Array;
+export function quantize(embedding: number[], type: 'int8'): Int8Array;
+export function quantize(embedding: number[], type: 'uint8'): Uint8Array;
+export function quantize(embedding: number[], type: 'binary'): Uint8Array;
 export function quantize(
   embedding: number[],
   type: QuantizationType,
@@ -125,12 +131,20 @@ export function quantize(
  * @param data - Quantized typed array
  * @param type - Quantization type used during quantization
  * @returns Reconstructed embedding vector (approximate for lossy types)
+ * @param originalDimension - For binary type, the original vector dimension count.
+ *   Binary quantization pads to full bytes, so this truncates the result to
+ *   the correct length. Ignored for other quantization types.
  * @example
  * dequantize(new Int8Array([64, -38, 102]), 'int8'); // [0.504, -0.299, 0.803]
  */
+export function dequantize(data: Float32Array, type: 'fp16', originalDimension?: number): number[];
+export function dequantize(data: Int8Array, type: 'int8', originalDimension?: number): number[];
+export function dequantize(data: Uint8Array, type: 'uint8', originalDimension?: number): number[];
+export function dequantize(data: Uint8Array, type: 'binary', originalDimension?: number): number[];
 export function dequantize(
   data: Float32Array | Int8Array | Uint8Array,
   type: QuantizationType,
+  originalDimension?: number,
 ): number[] {
   switch (type) {
     case 'fp16': {
@@ -165,6 +179,9 @@ export function dequantize(
           const bit = (data[byteIdx] >> bitIdx) & 1;
           result.push(bit === 1 ? 1 : -1);
         }
+      }
+      if (originalDimension !== undefined && originalDimension < result.length) {
+        return result.slice(0, originalDimension);
       }
       return result;
     }
@@ -206,10 +223,10 @@ export function getQuantizationInfo(type: string): {
     case 'binary':
       return {
         bits: 1,
-        range: [0, 1],
-        description: 'Binary quantization, 1 bit per dimension (positive=1, else=0)',
+        range: [-1, 1],
+        description: 'Binary quantization, 1 bit per dimension (positive=1, else=-1)',
       };
     default:
-      throw new Error(`Unknown quantization type: ${type}`);
+      throw new ValidationError(`Unknown quantization type: ${type}`);
   }
 }

@@ -1,56 +1,49 @@
 import type { Cluster, SimilarityMetric } from '../types';
-import { cosineSimilarity, dotProduct } from '../math/similarity';
-import { euclideanDistance, manhattanDistance } from '../math/distance';
-
-function getSimilarity(a: number[], b: number[], metric: SimilarityMetric): number {
-  switch (metric) {
-    case 'cosine':
-      return cosineSimilarity(a, b);
-    case 'dot':
-      return dotProduct(a, b);
-    case 'euclidean':
-      return 1 / (1 + euclideanDistance(a, b));
-    case 'manhattan':
-      return 1 / (1 + manhattanDistance(a, b));
-  }
-}
-
-function computeCentroid(members: number[][]): number[] {
-  const dims = members[0].length;
-  const centroid = new Array<number>(dims).fill(0);
-  for (const member of members) {
-    for (let i = 0; i < dims; i++) {
-      centroid[i] += member[i];
-    }
-  }
-  for (let i = 0; i < dims; i++) {
-    centroid[i] /= members.length;
-  }
-  return centroid;
-}
-
-function computeCohesion(members: number[][], metric: SimilarityMetric): number {
-  if (members.length <= 1) return 1.0;
-  let totalSim = 0;
-  let pairs = 0;
-  for (let i = 0; i < members.length; i++) {
-    for (let j = i + 1; j < members.length; j++) {
-      totalSim += getSimilarity(members[i], members[j], metric);
-      pairs++;
-    }
-  }
-  return totalSim / pairs;
-}
+import { computeScore } from '../internal/metrics';
+import { computeCentroid, computePairwiseCohesion } from '../internal/clustering';
 
 /**
- * Assigns an embedding to the most similar cluster.
+ * Assigns an embedding to the most similar existing cluster.
+ *
+ * This is the core function for **live classification** — when a new document,
+ * support ticket, or data point arrives, classify it into an existing cluster
+ * without re-clustering everything.
+ *
+ * **How it works:** Computes the similarity between the embedding and each
+ * cluster's centroid, then returns the index of the best match. If the best
+ * match is below the threshold, returns -1 (the embedding is an outlier or
+ * represents a new topic).
+ *
+ * **Incremental pipeline usage:** After assigning to a cluster, update the
+ * centroid using {@link batchIncrementalAverage} to keep the cluster
+ * representation current without re-processing all historical data.
+ *
  * @param embedding - The embedding vector to assign
- * @param clusters - Array of existing clusters
- * @param options - Optional metric and minimum threshold
- * @returns Object with clusterIndex (-1 if below threshold) and similarity score
+ * @param clusters - Array of existing clusters (must have centroids)
+ * @param options - Optional metric ('cosine' default) and minimum threshold (0 default)
+ * @returns Object with:
+ *   - `clusterIndex`: Index into the clusters array, or -1 if below threshold
+ *   - `similarity`: Similarity score to the best-matching cluster centroid
+ *
  * @example
- * assignToCluster(embedding, clusters, { threshold: 0.8 });
- * // { clusterIndex: 2, similarity: 0.92 }
+ * const { clusterIndex, similarity } = assignToCluster(newEmbedding, clusters, {
+ *   threshold: 0.8,
+ * });
+ * if (clusterIndex === -1) {
+ *   console.log('New topic detected — no cluster match');
+ * }
+ *
+ * @example
+ * // Incremental topic pipeline: assign + update centroid
+ * const { clusterIndex } = assignToCluster(newEmbed, clusters);
+ * if (clusterIndex >= 0) {
+ *   clusters[clusterIndex].centroid = batchIncrementalAverage(
+ *     clusters[clusterIndex].centroid,
+ *     [newEmbed],
+ *     clusters[clusterIndex].size,
+ *   );
+ *   clusters[clusterIndex].size++;
+ * }
  */
 export function assignToCluster(
   embedding: number[],
@@ -64,7 +57,7 @@ export function assignToCluster(
   let bestSim = -Infinity;
 
   for (let i = 0; i < clusters.length; i++) {
-    const sim = getSimilarity(embedding, clusters[i].centroid, metric);
+    const sim = computeScore(embedding, clusters[i].centroid, metric);
     if (sim > bestSim) {
       bestSim = sim;
       bestIndex = i;
@@ -80,12 +73,26 @@ export function assignToCluster(
 
 /**
  * Merges two clusters into one, recomputing the centroid and cohesion.
- * @param a - First cluster
- * @param b - Second cluster
- * @param metric - Similarity metric to use (defaults to 'cosine')
- * @returns A new merged cluster
+ *
+ * **When to use:** Manual cluster refinement after auto-clustering. For
+ * example, after auto-clustering support tickets, you notice "password reset"
+ * and "login issues" ended up as separate clusters but your team treats them
+ * as one topic. Merge them programmatically.
+ *
+ * The merged cluster:
+ * - Combines all members from both clusters
+ * - Concatenates labels (if either cluster has them)
+ * - Recomputes the centroid as the mean of all combined members
+ * - Recomputes pairwise cohesion for the combined members
+ *
+ * @param a - First cluster to merge
+ * @param b - Second cluster to merge
+ * @param metric - Similarity metric for cohesion computation (defaults to 'cosine')
+ * @returns A new merged cluster (original clusters are not modified)
+ *
  * @example
- * const merged = mergeClusters(clusterA, clusterB);
+ * const merged = mergeClusters(passwordCluster, loginCluster);
+ * console.log(`Merged: ${merged.size} items, cohesion ${merged.cohesion.toFixed(2)}`);
  */
 export function mergeClusters(
   a: Cluster,
@@ -103,6 +110,6 @@ export function mergeClusters(
     members,
     labels,
     size: members.length,
-    cohesion: computeCohesion(members, metric),
+    cohesion: computePairwiseCohesion(members, metric),
   };
 }

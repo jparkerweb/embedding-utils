@@ -222,7 +222,11 @@ describe('createOpenAICompatibleProvider', () => {
     await provider.embed('test', { signal: controller.signal });
 
     const [, options] = fetchSpy.mock.calls[0];
-    expect(options.signal).toBe(controller.signal);
+    // Signal is combined with timeout signal, so it's a composite signal
+    // Verify that aborting the user signal also aborts the fetch signal
+    expect(options.signal.aborted).toBe(false);
+    controller.abort();
+    expect(options.signal.aborted).toBe(true);
   });
 
   it('should throw ProviderError on non-retryable HTTP errors', async () => {
@@ -235,7 +239,7 @@ describe('createOpenAICompatibleProvider', () => {
       expect.unreachable('should have thrown');
     } catch (err: any) {
       expect(err).toBeInstanceOf(ProviderError);
-      expect(err.status).toBe(403);
+      expect(err.statusCode).toBe(403);
       expect(err.provider).toBe('openai-compatible');
     }
   });

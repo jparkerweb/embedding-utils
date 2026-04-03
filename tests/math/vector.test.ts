@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalize, magnitude, add, subtract, scale } from '../../src/math/vector';
+import { normalize, magnitude, add, subtract, scale, isNormalized } from '../../src/math/vector';
 import { ValidationError } from '../../src/types';
 
 describe('magnitude', () => {
@@ -87,5 +87,34 @@ describe('scale', () => {
 
   it('throws ValidationError for empty vector', () => {
     expect(() => scale([], 2)).toThrow(ValidationError);
+  });
+});
+
+describe('isNormalized', () => {
+  it('returns true for a unit vector', () => {
+    expect(isNormalized([0.6, 0.8])).toBe(true);
+  });
+
+  it('returns true for [1, 0, 0]', () => {
+    expect(isNormalized([1, 0, 0])).toBe(true);
+  });
+
+  it('returns false for non-unit vector', () => {
+    expect(isNormalized([1, 1, 1])).toBe(false);
+  });
+
+  it('respects custom tolerance', () => {
+    // magnitude of [1, 0.001] ≈ 1.0000005, within 0.01 tolerance
+    expect(isNormalized([1, 0.001], 0.01)).toBe(true);
+    // but not within 1e-10 tolerance
+    expect(isNormalized([1, 0.001], 1e-10)).toBe(false);
+  });
+
+  it('returns false for zero vector', () => {
+    expect(isNormalized([0, 0, 0])).toBe(false);
+  });
+
+  it('throws ValidationError for empty vector', () => {
+    expect(() => isNormalized([])).toThrow(ValidationError);
   });
 });

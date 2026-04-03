@@ -4,8 +4,9 @@ import type {
   EmbedOptions,
   GoogleVertexConfig,
 } from '../types';
-import { ProviderError } from '../types';
-import { retryWithBackoff, autoBatch } from './shared';
+import { ProviderError, ValidationError } from '../types';
+import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
+import type { GoogleVertexEmbeddingResponse } from './types';
 
 const DEFAULT_LOCATION = 'us-central1';
 const DEFAULT_MODEL = 'text-embedding-005';
@@ -42,6 +43,7 @@ export function createGoogleVertexProvider(
     signal?: AbortSignal,
   ): Promise<{ embeddings: number[][] }> {
     const token = await resolveToken();
+    const fetchSignal = createTimeoutSignal(config.timeout, signal);
 
     const result = await retryWithBackoff(
       async () => {
@@ -54,25 +56,46 @@ export function createGoogleVertexProvider(
           body: JSON.stringify({
             instances: batch.map((text) => ({ content: text })),
           }),
-          signal,
+          signal: fetchSignal,
         });
 
         if (!response.ok) {
+          let body: string;
+          try {
+            body = await response.text();
+          } catch {
+            body = response.statusText;
+          }
           throw new ProviderError(
-            `HTTP ${response.status}: ${response.statusText}`,
+            `HTTP ${response.status}: ${body}`,
             'google-vertex',
             response.status,
           );
         }
 
-        return response.json();
+        try {
+          return await response.json() as GoogleVertexEmbeddingResponse;
+        } catch {
+          throw new ProviderError(
+            'Failed to parse API response',
+            'google-vertex',
+            response.status,
+          );
+        }
       },
       retryConfig,
       signal,
     );
 
+    if (!Array.isArray(result.predictions) || !result.predictions[0]?.embeddings?.values) {
+      throw new ProviderError(
+        'Unexpected API response structure from google-vertex',
+        'google-vertex',
+      );
+    }
+
     const embeddings = result.predictions.map(
-      (p: any) => p.embeddings.values,
+      (p) => p.embeddings.values,
     );
     return { embeddings };
   }
@@ -86,23 +109,32 @@ export function createGoogleVertexProvider(
       options?: EmbedOptions,
     ): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
-      let allEmbeddings: number[][];
-
-      if (inputs.length <= MAX_BATCH_SIZE) {
-        const result = await embedBatch(inputs, options?.signal);
-        allEmbeddings = result.embeddings;
-      } else {
-        allEmbeddings = await autoBatch(inputs, MAX_BATCH_SIZE, async (batch) => {
-          const result = await embedBatch(batch, options?.signal);
-          return result.embeddings;
-        });
+      for (const text of inputs) {
+        if (text.trim().length === 0) {
+          throw new ValidationError('Cannot embed empty string');
+        }
       }
+      try {
+        let allEmbeddings: number[][];
 
-      return {
-        embeddings: allEmbeddings,
-        model,
-        dimensions: allEmbeddings[0]?.length ?? 0,
-      };
+        if (inputs.length <= MAX_BATCH_SIZE) {
+          const result = await embedBatch(inputs, options?.signal);
+          allEmbeddings = result.embeddings;
+        } else {
+          allEmbeddings = await autoBatch(inputs, MAX_BATCH_SIZE, async (batch) => {
+            const result = await embedBatch(batch, options?.signal);
+            return result.embeddings;
+          });
+        }
+
+        return {
+          embeddings: allEmbeddings,
+          model,
+          dimensions: allEmbeddings[0]?.length ?? 0,
+        };
+      } catch (error) {
+        wrapTimeoutError(error, 'google-vertex', config.timeout);
+      }
     },
   };
 }

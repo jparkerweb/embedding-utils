@@ -1,2 +1,3 @@
 export { serialize, deserialize } from './serialize';
-export { createLRUCache } from './cache';
+export type { DeserializeResult } from './serialize';
+export { createLRUCache, warmCache } from './cache';

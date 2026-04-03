@@ -34,9 +34,18 @@
     "README.md",
     "LICENSE"
   ],
+  "sideEffects": false,
   "engines": {
     "node": ">=18"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jparkerweb/embedding-utils.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jparkerweb/embedding-utils/issues"
+  },
+  "homepage": "https://github.com/jparkerweb/embedding-utils#readme",
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
@@ -47,7 +56,7 @@
   },
   "license": "Apache-2.0",
   "peerDependencies": {
-    "@huggingface/transformers": "^3.0.0"
+    "@huggingface/transformers": "^4.0.0"
   },
   "peerDependenciesMeta": {
     "@huggingface/transformers": {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { truncateDimensions } from '../../src/math/dimensions';
+import { truncateDimensions, validateDimensions } from '../../src/math/dimensions';
 import { ValidationError } from '../../src/types';
 
 describe('truncateDimensions (single vector)', () => {
@@ -43,5 +43,45 @@ describe('truncateDimensions (batch)', () => {
       [3, 4],
     ];
     expect(truncateDimensions(batch, 2)).toEqual(batch);
+  });
+});
+
+describe('validateDimensions', () => {
+  it('returns valid for consistent dimensions', () => {
+    const result = validateDimensions([[1, 2], [3, 4], [5, 6]]);
+    expect(result.valid).toBe(true);
+    expect(result.dimension).toBe(2);
+    expect(result.mismatches).toEqual([]);
+  });
+
+  it('returns invalid with correct mismatch indices', () => {
+    const result = validateDimensions([[1, 2], [3, 4, 5], [6, 7]]);
+    expect(result.valid).toBe(false);
+    expect(result.dimension).toBe(2);
+    expect(result.mismatches).toEqual([1]);
+  });
+
+  it('validates against expectedDim', () => {
+    const result = validateDimensions([[1, 2], [3, 4]], 3);
+    expect(result.valid).toBe(false);
+    expect(result.dimension).toBe(3);
+    expect(result.mismatches).toEqual([0, 1]);
+  });
+
+  it('returns valid for empty array', () => {
+    const result = validateDimensions([]);
+    expect(result.valid).toBe(true);
+    expect(result.mismatches).toEqual([]);
+  });
+
+  it('uses expectedDim for empty array when provided', () => {
+    const result = validateDimensions([], 5);
+    expect(result.dimension).toBe(5);
+  });
+
+  it('detects multiple mismatches', () => {
+    const result = validateDimensions([[1, 2], [3], [4, 5], [6]]);
+    expect(result.valid).toBe(false);
+    expect(result.mismatches).toEqual([1, 3]);
   });
 });

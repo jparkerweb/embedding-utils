@@ -158,6 +158,23 @@ describe('quantize / dequantize — binary', () => {
   });
 });
 
+describe('binary dequantize dimension fix (FR-1)', () => {
+  it('truncates to originalDimension when not a multiple of 8', () => {
+    const embedding = [0.5, -0.3, 0.1, 0.7, -0.2, 0.9, 0.4, -0.1, 0.3, -0.6];
+    expect(embedding.length).toBe(10); // not a multiple of 8
+    const quantized = quantize(embedding, 'binary');
+    expect(quantized.length).toBe(2); // ceil(10/8) = 2 bytes = 16 bits
+
+    // Without originalDimension, returns 16 elements
+    const restoredFull = dequantize(quantized, 'binary');
+    expect(restoredFull.length).toBe(16);
+
+    // With originalDimension, returns 10 elements
+    const restoredTruncated = dequantize(quantized, 'binary', 10);
+    expect(restoredTruncated.length).toBe(10);
+  });
+});
+
 describe('getQuantizationInfo', () => {
   it('returns info for fp16', () => {
     const info = getQuantizationInfo('fp16');
@@ -183,7 +200,7 @@ describe('getQuantizationInfo', () => {
   it('returns info for binary', () => {
     const info = getQuantizationInfo('binary');
     expect(info.bits).toBe(1);
-    expect(info.range).toEqual([0, 1]);
+    expect(info.range).toEqual([-1, 1]);
     expect(typeof info.description).toBe('string');
   });
 

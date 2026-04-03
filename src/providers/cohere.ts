@@ -4,8 +4,9 @@ import type {
   EmbedOptions,
   CohereConfig,
 } from '../types';
-import { ProviderError } from '../types';
-import { retryWithBackoff, autoBatch } from './shared';
+import { ProviderError, ValidationError } from '../types';
+import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
+import type { CohereEmbeddingResponse } from './types';
 
 const COHERE_API_URL = 'https://api.cohere.com/v2/embed';
 const DEFAULT_MODEL = 'embed-v4.0';
@@ -33,6 +34,7 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
     inputType: string,
     signal?: AbortSignal,
   ): Promise<{ embeddings: number[][]; tokens: number }> {
+    const fetchSignal = createTimeoutSignal(config.timeout, signal);
     const result = await retryWithBackoff(
       async () => {
         const response = await fetch(COHERE_API_URL, {
@@ -47,24 +49,45 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
             input_type: inputType,
             embedding_types: ['float'],
           }),
-          signal,
+          signal: fetchSignal,
         });
 
         if (!response.ok) {
+          let body: string;
+          try {
+            body = await response.text();
+          } catch {
+            body = response.statusText;
+          }
           throw new ProviderError(
-            `HTTP ${response.status}: ${response.statusText}`,
+            `HTTP ${response.status}: ${body}`,
             'cohere',
             response.status,
           );
         }
 
-        return response.json();
+        try {
+          return await response.json() as CohereEmbeddingResponse;
+        } catch {
+          throw new ProviderError(
+            'Failed to parse API response',
+            'cohere',
+            response.status,
+          );
+        }
       },
       retryConfig,
       signal,
     );
 
-    const embeddings: number[][] = result.embeddings.float;
+    if (!result.embeddings?.float || !Array.isArray(result.embeddings.float)) {
+      throw new ProviderError(
+        'Unexpected API response structure from cohere',
+        'cohere',
+      );
+    }
+
+    const embeddings = result.embeddings.float;
     const tokens = result.meta?.billed_units?.input_tokens ?? 0;
     return { embeddings, tokens };
   }
@@ -78,28 +101,38 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
       options?: EmbedOptions,
     ): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
-      const inputType = mapInputType(options?.inputType);
-      let allEmbeddings: number[][];
-      let totalTokens = 0;
-
-      if (inputs.length <= MAX_BATCH_SIZE) {
-        const result = await embedBatch(inputs, inputType, options?.signal);
-        allEmbeddings = result.embeddings;
-        totalTokens = result.tokens;
-      } else {
-        allEmbeddings = await autoBatch(inputs, MAX_BATCH_SIZE, async (batch) => {
-          const result = await embedBatch(batch, inputType, options?.signal);
-          totalTokens += result.tokens;
-          return result.embeddings;
-        });
+      for (const text of inputs) {
+        if (text.trim().length === 0) {
+          throw new ValidationError('Cannot embed empty string');
+        }
       }
+      const inputType = mapInputType(options?.inputType);
 
-      return {
-        embeddings: allEmbeddings,
-        model,
-        dimensions: allEmbeddings[0]?.length ?? 0,
-        usage: { tokens: totalTokens },
-      };
+      try {
+        let allEmbeddings: number[][];
+        let totalTokens = 0;
+
+        if (inputs.length <= MAX_BATCH_SIZE) {
+          const result = await embedBatch(inputs, inputType, options?.signal);
+          allEmbeddings = result.embeddings;
+          totalTokens = result.tokens;
+        } else {
+          allEmbeddings = await autoBatch(inputs, MAX_BATCH_SIZE, async (batch) => {
+            const result = await embedBatch(batch, inputType, options?.signal);
+            totalTokens += result.tokens;
+            return result.embeddings;
+          });
+        }
+
+        return {
+          embeddings: allEmbeddings,
+          model,
+          dimensions: allEmbeddings[0]?.length ?? 0,
+          usage: { tokens: totalTokens },
+        };
+      } catch (error) {
+        wrapTimeoutError(error, 'cohere', config.timeout);
+      }
     },
   };
 }

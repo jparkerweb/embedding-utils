@@ -5,11 +5,18 @@ import type {
   LocalProviderConfig,
   CacheProvider,
 } from '../types';
-import { ModelNotFoundError } from '../types';
+import { EmbeddingUtilsError, ModelNotFoundError } from '../types';
 import { truncateDimensions } from '../math/dimensions';
 import { createLRUCache } from '../storage/cache';
 
 const DEFAULT_MODEL = 'Xenova/all-MiniLM-L12-v2';
+
+/** Minimal interface for the @huggingface/transformers pipeline function result. */
+interface FeatureExtractionPipeline {
+  (inputs: string[], options?: { pooling?: string; normalize?: boolean }): Promise<{
+    tolist(): number[][];
+  }>;
+}
 
 /**
  * Creates a local embedding provider using @huggingface/transformers (ONNX).
@@ -24,11 +31,11 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
   const documentPrefix = config?.documentPrefix ?? '';
   const queryPrefix = config?.queryPrefix ?? '';
 
-  let pipelineInstance: any = null;
-  let pipelinePromise: Promise<any> | null = null;
-  const cache: CacheProvider = createLRUCache({ maxSize: 1000 });
+  let pipelineInstance: FeatureExtractionPipeline | null = null;
+  let pipelinePromise: Promise<FeatureExtractionPipeline> | null = null;
+  const cache: CacheProvider = createLRUCache(config?.cache ?? { maxSize: 1000 });
 
-  async function getPipeline(): Promise<any> {
+  async function getPipeline(): Promise<FeatureExtractionPipeline> {
     if (pipelineInstance) return pipelineInstance;
     if (pipelinePromise) return pipelinePromise;
 
@@ -38,14 +45,16 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
         const pipe = await transformers.pipeline('feature-extraction', model, {
           dtype: config?.precision ?? 'fp32',
         });
-        pipelineInstance = pipe;
-        return pipe;
-      } catch (error: any) {
+        pipelineInstance = pipe as unknown as FeatureExtractionPipeline;
+        return pipelineInstance;
+      } catch (error: unknown) {
         pipelinePromise = null;
+        const err = error instanceof Error ? error : null;
+        const code = (error as { code?: string })?.code;
         if (
-          error?.code === 'ERR_MODULE_NOT_FOUND' ||
-          error?.code === 'MODULE_NOT_FOUND' ||
-          error?.message?.includes('Cannot find module')
+          code === 'ERR_MODULE_NOT_FOUND' ||
+          code === 'MODULE_NOT_FOUND' ||
+          err?.message?.includes('Cannot find module')
         ) {
           throw new ModelNotFoundError(
             '@huggingface/transformers is not installed. ' +
@@ -59,8 +68,8 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
     return pipelinePromise;
   }
 
-  function getCacheKey(inputs: string[]): string {
-    return model + ':' + JSON.stringify(inputs);
+  function getCacheKey(inputs: string[], dimensions?: number): string {
+    return model + ':' + (dimensions ?? '') + ':' + JSON.stringify(inputs);
   }
 
   return {
@@ -72,7 +81,7 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
       options?: EmbedOptions,
     ): Promise<EmbeddingResult> {
       if (options?.signal?.aborted) {
-        throw new Error('Aborted');
+        throw new EmbeddingUtilsError('Aborted');
       }
 
       const inputs = Array.isArray(input) ? input : [input];
@@ -89,7 +98,7 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
       });
 
       // Check cache
-      const cacheKey = getCacheKey(prefixedInputs);
+      const cacheKey = getCacheKey(prefixedInputs, options?.dimensions);
       const cached = await cache.get(cacheKey);
       if (cached) {
         let embeddings = cached;

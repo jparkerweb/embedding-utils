@@ -2,3 +2,7 @@ export { topK, topKMulti } from './topk';
 export { aboveThreshold, deduplicate } from './threshold';
 export { rankBySimilarity } from './rank';
 export { similarityMatrix } from './matrix';
+export { pairwiseSimilarity } from './pairwise';
+export { rerankResults } from './rerank';
+export { mmrSearch } from './mmr';
+export { SearchIndex } from './search-index';

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { euclideanDistance, manhattanDistance } from '../../src/math/distance';
+import { euclideanDistance, manhattanDistance, cosineDistance } from '../../src/math/distance';
 import { ValidationError } from '../../src/types';
 
 describe('euclideanDistance', () => {
@@ -45,5 +45,27 @@ describe('manhattanDistance', () => {
 
   it('throws ValidationError for mismatched dimensions', () => {
     expect(() => manhattanDistance([1, 2], [1])).toThrow(ValidationError);
+  });
+});
+
+describe('cosineDistance', () => {
+  it('returns 0 for identical vectors', () => {
+    expect(cosineDistance([1, 0], [1, 0])).toBeCloseTo(0.0);
+  });
+
+  it('returns 1 for orthogonal vectors', () => {
+    expect(cosineDistance([1, 0], [0, 1])).toBeCloseTo(1.0);
+  });
+
+  it('returns 2 for opposite vectors', () => {
+    expect(cosineDistance([1, 0], [-1, 0])).toBeCloseTo(2.0);
+  });
+
+  it('throws ValidationError for empty vectors', () => {
+    expect(() => cosineDistance([], [])).toThrow(ValidationError);
+  });
+
+  it('throws ValidationError for mismatched dimensions', () => {
+    expect(() => cosineDistance([1, 2], [1])).toThrow(ValidationError);
   });
 });

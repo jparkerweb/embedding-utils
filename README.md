@@ -1,11 +1,5 @@
 # embedding-utils
 
-[![npm version](https://img.shields.io/npm/v/embedding-utils)](https://www.npmjs.com/package/embedding-utils)
-[![license](https://img.shields.io/npm/l/embedding-utils)](./LICENSE)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)](https://www.typescriptlang.org/)
-[![zero dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)](#)
-[![node](https://img.shields.io/node/v/embedding-utils)](https://nodejs.org/)
-
 **Vector math, similarity search, clustering, and multi-provider embedding generation -- zero dependencies, full TypeScript, one import.**
 
 Build semantic search, RAG pipelines, recommendation engines, duplicate detection, and document clustering without pulling in heavy ML frameworks or vector databases.
@@ -26,6 +20,9 @@ Build semantic search, RAG pipelines, recommendation engines, duplicate detectio
   - [Quantization](#quantization)
   - [Storage](#storage)
   - [Model Management](#model-management)
+  - [High-Level APIs](#high-level-apis)
+- [Caveats & Best Practices](#caveats--best-practices)
+- [API Reference (all exports)](#api-reference-all-exports)
 - [Common Patterns](#common-patterns)
 - [TypeScript](#typescript)
 - [Error Handling](#error-handling)
@@ -274,6 +271,66 @@ const matrix = similarityMatrix(corpus);
 // => number[][] (symmetric, diagonal = 1.0 for cosine)
 ```
 
+#### Filtered search
+
+Pass a `filter` callback to `topK` to dynamically include/exclude items without modifying the corpus.
+
+```typescript
+// Only search documents from a specific category
+const results = topK(query, corpus, 5, {
+  labels: docLabels,
+  filter: (index, label) => label?.startsWith('category-a') ?? false,
+});
+```
+
+#### Pairwise similarity
+
+Compare two parallel lists of embeddings element-wise. Useful for evaluating translation quality, paraphrase detection, or before/after comparison.
+
+```typescript
+import { pairwiseSimilarity } from 'embedding-utils';
+const scores = pairwiseSimilarity(originalEmbeddings, translatedEmbeddings);
+// => [0.95, 0.88, 0.92, ...] — one score per pair
+```
+
+#### MMR search (Maximal Marginal Relevance)
+
+Select results that are both relevant to the query and diverse from each other. Prevents redundant results in RAG pipelines.
+
+```typescript
+import { mmrSearch } from 'embedding-utils';
+const results = mmrSearch(query, corpus, 5, {
+  lambda: 0.7,  // 0 = max diversity, 1 = max relevance
+});
+```
+
+#### Re-ranking
+
+Two-stage retrieval: fast initial search, then precise re-ranking with a different metric or weighted combination.
+
+```typescript
+import { rerankResults } from 'embedding-utils';
+const initial = topK(query, corpus, 20);
+const reranked = rerankResults(initial, query, {
+  weights: { original: 0.3, rerank: 0.7 },
+});
+```
+
+#### SearchIndex
+
+Stateful in-memory search index with CRUD operations. Suitable for corpora up to ~100k embeddings.
+
+```typescript
+import { SearchIndex } from 'embedding-utils';
+
+const index = new SearchIndex({ metric: 'cosine' });
+index.add('doc-1', embedding1, { category: 'science' });
+index.add('doc-2', embedding2, { category: 'history' });
+
+const results = index.search(queryEmbedding, { topK: 5 });
+index.remove('doc-1');
+```
+
 ---
 
 ### Clustering
@@ -341,6 +398,61 @@ const { clusterIndex, similarity } = assignToCluster(newEmbedding, clusters, { t
 const merged = mergeClusters(clusters[0], clusters[1]);
 ```
 
+#### Clustering enhancements
+
+**`centroidCohesion`** -- Average similarity of all members to the cluster centroid. Faster than pairwise `cohesionScore` (O(n) vs O(n²)), good for per-cluster quality monitoring.
+
+```typescript
+import { centroidCohesion } from 'embedding-utils';
+const quality = centroidCohesion(cluster, 'cosine'); // 0-1, higher = tighter
+```
+
+**`legacy` preset** -- Disables clustering by returning all embeddings in a single cluster. Use for backwards compatibility with pipelines that predated clustering.
+
+| Preset | Threshold | Min Size | Max Clusters | Best for |
+|--------|:---------:|:--------:|:------------:|----------|
+| `high-precision` | 0.95 | 3 | 10 | Tight, highly cohesive groups |
+| `balanced` | 0.85 | 5 | 5 | General-purpose clustering |
+| `performance` | 0.75 | 10 | 3 | Fast, broad groupings |
+| `legacy` | 0 | 1 | 1 | Clustering disabled (single cluster) |
+
+**`assignmentStrategy`** -- Controls how embeddings are assigned during clustering. `'centroid'` (default) compares to the cluster centroid. `'average-similarity'` computes average similarity to all current members, which is more accurate but slower.
+
+```typescript
+clusterEmbeddings(embeddings, { assignmentStrategy: 'average-similarity' });
+```
+
+**`shuffle` + `shuffleSeed`** -- Greedy clustering is order-sensitive. Enable `shuffle: true` for order-independent results with a deterministic seed.
+
+```typescript
+clusterEmbeddings(embeddings, { shuffle: true, shuffleSeed: 42 });
+```
+
+**`findOptimalK` + `silhouetteByK`** -- Automatically determine the best number of clusters using silhouette analysis or the elbow method.
+
+```typescript
+import { findOptimalK, silhouetteByK } from 'embedding-utils';
+
+const bestK = findOptimalK(embeddings, { minK: 2, maxK: 8 });
+const scores = silhouetteByK(embeddings); // [{ k: 2, silhouette: 0.6 }, ...]
+```
+
+**`clusterStats` + `detectOutliers`** -- Detailed per-cluster statistics and outlier detection.
+
+```typescript
+import { clusterStats, detectOutliers } from 'embedding-utils';
+
+const stats = clusterStats(cluster); // { minSimilarity, maxSimilarity, meanSimilarity, ... }
+const outlierIndices = detectOutliers(cluster, { threshold: 2 }); // member indices > 2σ from mean
+```
+
+**`centroidDrift`** -- Measure how much a cluster centroid has shifted between two snapshots.
+
+```typescript
+import { centroidDrift } from 'embedding-utils';
+const drift = centroidDrift(oldCentroid, newCentroid, 'cosine'); // 0 = no change
+```
+
 ---
 
 ### Aggregation
@@ -371,6 +483,22 @@ avg = incrementalAverage(avg, [4, 5, 6], 1); // count = embeddings already avera
 avg = incrementalAverage(avg, [7, 8, 9], 2);
 // Numerically equivalent to averageEmbeddings([[1,2,3], [4,5,6], [7,8,9]])
 ```
+
+**`batchIncrementalAverage`** -- Incrementally compute the average of embedding batches without reprocessing all previous data. Use when new data arrives in batches and you want to update a running centroid without re-averaging from scratch.
+
+```typescript
+import { batchIncrementalAverage } from 'embedding-utils';
+
+let centroidAvg = firstBatchAvg;  // average of first 10 embeddings
+let count = 10;
+
+// New batch of 5 embeddings arrives
+centroidAvg = batchIncrementalAverage(centroidAvg, newBatch, count);
+count += newBatch.length;
+// Mathematically equivalent to averageEmbeddings([...allOldEmbeddings, ...newBatch])
+```
+
+Use `batchIncrementalAverage` over `averageEmbeddings` when you don't want to store or reprocess all historical embeddings. If you're updating one embedding at a time, use `incrementalAverage` instead.
 
 **`maxPooling` / `minPooling`** -- Element-wise max or min across vectors. Max pooling captures the "strongest signal" across chunks -- if any chunk mentions "urgent," that signal is preserved. Min pooling captures the weakest, useful for detecting what's *missing* across a set.
 
@@ -508,6 +636,223 @@ setModelPath('/path/to/models');
 
 ---
 
+### High-Level APIs
+
+#### EmbeddingStore
+
+A batteries-included store that combines a provider, optional cache, and search index. Add texts, search by text or embedding -- the store handles embedding generation and caching automatically.
+
+```typescript
+import { createEmbeddingStore, createOpenAICompatibleProvider } from 'embedding-utils';
+
+const store = createEmbeddingStore({
+  provider: createOpenAICompatibleProvider({ apiKey: 'sk-...', model: 'text-embedding-3-small' }),
+  cache: { maxSize: 500 },
+  metric: 'cosine',
+});
+
+await store.add('doc-1', 'The cat sat on the mat');
+await store.add('doc-2', 'A dog played in the park');
+
+const results = await store.search('animals', { topK: 2 });
+// => [{ id: 'doc-1', score: 0.87, ... }, { id: 'doc-2', score: 0.82, ... }]
+```
+
+#### IncrementalClusterer
+
+Online clustering that assigns embeddings as they arrive. No need to re-cluster the entire dataset when new data comes in.
+
+```typescript
+import { IncrementalClusterer } from 'embedding-utils';
+
+const clusterer = new IncrementalClusterer({ similarityThreshold: 0.85 });
+clusterer.addEmbedding([1, 0, 0], 'doc-a');
+clusterer.addEmbedding([0.98, 0.02, 0], 'doc-b');
+clusterer.addEmbedding([0, 1, 0], 'doc-c');
+
+const clusters = clusterer.getClusters();
+clusterer.rebalance(); // re-optimize clusters with full re-clustering
+```
+
+#### Text Chunking
+
+Split text into chunks for embedding. Useful for processing long documents that exceed model token limits.
+
+```typescript
+import { chunkByTokenCount, chunkBySentence } from 'embedding-utils';
+
+// Split by approximate token count (~1.3 tokens/word)
+const chunks = chunkByTokenCount(longText, 512, { overlap: 50 });
+
+// Split on sentence boundaries (uses Intl.Segmenter)
+const sentences = chunkBySentence(longText, { maxTokens: 512 });
+```
+
+#### Getting Started (end-to-end)
+
+```typescript
+import { createEmbeddingStore, createOpenAICompatibleProvider } from 'embedding-utils';
+
+const store = createEmbeddingStore({
+  provider: createOpenAICompatibleProvider({ apiKey: 'sk-...', model: 'text-embedding-3-small' }),
+});
+
+// Add documents
+await store.addBatch([
+  { id: '1', text: 'Machine learning basics' },
+  { id: '2', text: 'Cooking pasta recipes' },
+  { id: '3', text: 'Neural network architectures' },
+]);
+
+// Search
+const results = await store.search('AI and deep learning', { topK: 2 });
+console.log(results.map(r => r.id)); // => ['3', '1']
+```
+
+---
+
+## Caveats & Best Practices
+
+- **Embedding dimension consistency** -- Always use the same model and dimensions for embeddings you plan to compare. Mixing embeddings from different models produces meaningless similarity scores.
+
+- **Normalization** -- Cosine similarity assumes unit vectors for best results. Use `normalize()` if your provider doesn't auto-normalize, especially before storing in databases that only support dot product search.
+
+- **Cache key considerations** -- Cache keys include model and dimensions. Switching models invalidates cache entries. Use a consistent provider config within a cache lifetime.
+
+- **Clustering order sensitivity** -- Greedy agglomerative clustering is order-dependent. Use `shuffle: true` with a `shuffleSeed` for reproducible, order-independent results.
+
+- **Text chunking accuracy** -- Token count is estimated at ~1.3 tokens/word. This is a heuristic, not a tokenizer -- for precise token budgets, use your model's actual tokenizer.
+
+- **SearchIndex scalability** -- `SearchIndex` uses brute-force linear scan, suitable for up to ~100k embeddings. For larger corpora, use a dedicated vector database.
+
+---
+
+## API Reference (all exports)
+
+### Math
+
+| Function | Description |
+|----------|-------------|
+| `cosineSimilarity(a, b)` | Cosine similarity (-1 to 1) |
+| `cosineDistance(a, b)` | 1 - cosineSimilarity |
+| `dotProduct(a, b)` | Dot product |
+| `euclideanDistance(a, b)` | L2 distance |
+| `manhattanDistance(a, b)` | L1 distance |
+| `normalize(v)` | Unit vector |
+| `magnitude(v)` | Vector length |
+| `add(a, b)` | Element-wise sum |
+| `subtract(a, b)` | Element-wise difference |
+| `scale(v, s)` | Scalar multiply |
+| `isNormalized(v)` | Check if magnitude ≈ 1 |
+| `truncateDimensions(v, n)` | Matryoshka truncation |
+| `validateDimensions(embeddings)` | Verify matching dimensions |
+
+### Search
+
+| Function / Class | Description |
+|------------------|-------------|
+| `topK(query, corpus, k, opts?)` | Top-K similarity search |
+| `topKMulti(queries, corpus, k, opts?)` | Batch top-K search |
+| `aboveThreshold(query, corpus, t, opts?)` | Threshold-filtered search |
+| `deduplicate(corpus, threshold, opts?)` | Remove near-duplicates |
+| `rankBySimilarity(query, corpus, opts?)` | Rank entire corpus |
+| `similarityMatrix(corpus, opts?)` | NxN pairwise matrix |
+| `pairwiseSimilarity(a, b, metric?)` | Element-wise pair comparison |
+| `rerankResults(results, query, opts?)` | Re-score search results |
+| `mmrSearch(query, corpus, k, opts?)` | Diverse search (MMR) |
+| `SearchIndex` | Stateful CRUD + search index |
+
+### Clustering
+
+| Function / Class | Description |
+|------------------|-------------|
+| `clusterEmbeddings(embeddings, config?)` | Greedy agglomerative clustering |
+| `getPreset(name)` | Get preset config |
+| `cohesionScore(cluster)` | Pairwise cohesion (O(n²)) |
+| `centroidCohesion(cluster, metric?)` | Centroid-based cohesion (O(n)) |
+| `silhouetteScore(clusters)` | Global clustering quality |
+| `assignToCluster(embedding, clusters, opts?)` | Classify into existing cluster |
+| `mergeClusters(a, b)` | Merge two clusters |
+| `findOptimalK(embeddings, opts?)` | Find optimal cluster count |
+| `silhouetteByK(embeddings, opts?)` | Silhouette scores per K |
+| `clusterStats(cluster, metric?)` | Detailed cluster statistics |
+| `detectOutliers(cluster, opts?)` | Find outlier members |
+| `centroidDrift(old, new, metric?)` | Measure centroid shift |
+| `IncrementalClusterer` | Online incremental clustering |
+
+### Aggregation
+
+| Function | Description |
+|----------|-------------|
+| `averageEmbeddings(embeddings)` | Element-wise mean |
+| `weightedAverage(embeddings, weights)` | Weighted mean |
+| `incrementalAverage(avg, new, count)` | Streaming average |
+| `batchIncrementalAverage(avg, batch, count)` | Batch streaming average |
+| `centroid(embeddings)` | Alias for averageEmbeddings |
+| `maxPooling(embeddings)` | Element-wise max |
+| `minPooling(embeddings)` | Element-wise min |
+| `combineEmbeddings(texts, provider, opts?)` | Embed + aggregate |
+
+### Providers
+
+| Function | Description |
+|----------|-------------|
+| `createLocalProvider(config?)` | Local ONNX provider |
+| `createOpenAICompatibleProvider(config)` | OpenAI / compatible APIs |
+| `createCohereProvider(config)` | Cohere API |
+| `createGoogleVertexProvider(config)` | Google Vertex AI |
+| `createProvider(type, config)` | Factory for named providers |
+| `withCache(provider, opts?)` | Add caching middleware |
+| `retryWithBackoff(fn, config?)` | Retry utility |
+| `autoBatch(inputs, batchSize, fn)` | Auto-batching utility |
+
+### Storage
+
+| Function | Description |
+|----------|-------------|
+| `serialize(embeddings, format)` | Serialize to JSON/binary/base64 |
+| `deserialize(data, format)` | Deserialize embeddings |
+| `createLRUCache(opts?)` | In-memory LRU cache |
+| `warmCache(cache, entries)` | Pre-populate cache |
+| `estimateMemorySavings(embeddings, type)` | Quantization savings estimate |
+
+### Quantization
+
+| Function | Description |
+|----------|-------------|
+| `quantize(embedding, type)` | Reduce precision |
+| `dequantize(data, type)` | Restore precision |
+| `getQuantizationInfo(type)` | Inspect type details |
+
+### Models
+
+| Function | Description |
+|----------|-------------|
+| `downloadModel(id)` | Download ONNX model |
+| `listModels()` | List cached models |
+| `deleteModel(id)` | Remove cached model |
+| `setModelPath(path)` | Set cache directory |
+| `getModelInfo(id)` | Get model metadata |
+| `registerModel(info)` | Add custom model to registry |
+| `getRecommendedModel(criteria?)` | Get model recommendation |
+
+### Text
+
+| Function | Description |
+|----------|-------------|
+| `chunkByTokenCount(text, maxTokens, opts?)` | Split by token count |
+| `chunkBySentence(text, opts?)` | Split on sentence boundaries |
+| `getTokenizerInfo(model)` | Get model tokenizer info |
+
+### Store
+
+| Function / Type | Description |
+|-----------------|-------------|
+| `createEmbeddingStore(config)` | Create high-level store |
+| `EmbeddingStore` | Store interface type |
+
+---
+
 ## Common Patterns
 
 ### Semantic search pipeline
@@ -579,6 +924,111 @@ for await (const embedding of embeddingStream) {
 }
 // avg is the running mean -- only 1 vector in memory at a time
 ```
+
+### Topic analysis pipeline (fast-topic-analysis pattern)
+
+Build a complete topic detection system: embed training phrases, cluster them, then compare incoming text against cluster centroids. This is the pattern used by [fast-topic-analysis](https://github.com/jparkerweb/fast-topic-analysis).
+
+```typescript
+import {
+  createLocalProvider,
+  clusterEmbeddings,
+  getPreset,
+  cosineSimilarity,
+  centroidCohesion,
+  assignToCluster,
+  batchIncrementalAverage,
+} from 'embedding-utils';
+
+const provider = createLocalProvider({
+  model: 'Xenova/all-MiniLM-L12-v2',
+  documentPrefix: '',          // set if your model needs it
+  queryPrefix: '',
+});
+
+// ── 1. Generate training embeddings per topic ──
+const topics = [
+  { name: 'cookies', phrases: ['chocolate chip cookies', 'baking cookies at home', ...], threshold: 0.4 },
+  { name: 'space',   phrases: ['NASA launches rocket', 'Mars exploration plans', ...],   threshold: 0.4 },
+];
+
+for (const topic of topics) {
+  const { embeddings } = await provider.embed(topic.phrases, { inputType: 'document' });
+
+  // ── 2. Cluster the embeddings ──
+  const clusters = clusterEmbeddings(embeddings, getPreset('balanced'));
+
+  // ── 3. Inspect cluster quality ──
+  for (const cluster of clusters) {
+    const quality = centroidCohesion(cluster);
+    console.log(`${topic.name}: ${cluster.size} phrases, cohesion ${quality.toFixed(3)}`);
+  }
+
+  // Store clusters (centroids + metadata) for runtime matching
+  topic.clusters = clusters;
+}
+
+// ── 4. Runtime: classify incoming text ──
+const { embeddings: [queryEmbed] } = await provider.embed('I love baking cookies', {
+  inputType: 'query',
+});
+
+for (const topic of topics) {
+  for (const cluster of topic.clusters) {
+    const similarity = cosineSimilarity(queryEmbed, cluster.centroid);
+    if (similarity >= topic.threshold) {
+      console.log(`Match: "${topic.name}" (similarity: ${similarity.toFixed(3)})`);
+    }
+  }
+}
+```
+
+### Incremental centroid updates
+
+When new training data arrives, update existing cluster centroids without re-processing all historical data. This is mathematically equivalent to re-computing from scratch.
+
+```typescript
+import { batchIncrementalAverage, assignToCluster } from 'embedding-utils';
+
+// New phrases arrive for the "cookies" topic
+const { embeddings: newEmbeddings } = await provider.embed(newPhrases, {
+  inputType: 'document',
+});
+
+for (const newEmbed of newEmbeddings) {
+  // Find the nearest cluster
+  const { clusterIndex, similarity } = assignToCluster(newEmbed, clusters);
+
+  if (clusterIndex >= 0) {
+    // Update the cluster centroid with weighted average
+    clusters[clusterIndex].centroid = batchIncrementalAverage(
+      clusters[clusterIndex].centroid,
+      [newEmbed],
+      clusters[clusterIndex].size,
+    );
+    clusters[clusterIndex].size++;
+    clusters[clusterIndex].members.push(newEmbed);
+  }
+}
+```
+
+### Migration from fast-topic-analysis
+
+If you're migrating from fast-topic-analysis's built-in functions to embedding-utils, here's how each function maps:
+
+| fast-topic-analysis | embedding-utils | Notes |
+|---------------------|-----------------|-------|
+| `generateEmbeddings(phrases)` | `provider.embed(phrases)` | Use `createLocalProvider()` with same model |
+| `cosineSimilarity(a, b)` | `cosineSimilarity(a, b)` | Identical signature and behavior |
+| `calculateAverageEmbedding(embeddings)` | `averageEmbeddings(embeddings)` | Same formula |
+| `weightedAverage(existing, count, newEmbeds)` | `batchIncrementalAverage(existing, newEmbeds, count)` | Note: `count` moves to 3rd param. Do **not** confuse with embedding-utils' own `weightedAverage(embeddings, weights)` which has a different signature. |
+| `combineTopicEmbeddings(existing, count, phrases)` | `batchIncrementalAverage(existing, newEmbeds, count)` | Generate embeddings separately first, then pass to `batchIncrementalAverage` |
+| `clusterEmbeddings(embeddings)` | `clusterEmbeddings(embeddings, config)` | Same algorithm, typed config. FTA's `phrasesWithEmbeddings` param is not needed — track labels separately. |
+| `clusteringConfig` presets | `getPreset('balanced')` | `'high-precision'`, `'balanced'`, `'performance'`, `'legacy'`. Note: threshold values differ slightly — FTA balanced=0.9, EU balanced=0.85. Adjust if you need exact FTA behavior. |
+| Cohesion calculation (inline in generate.js) | `centroidCohesion(cluster)` | Both compute avg similarity of members to centroid |
+| Disabled clustering (`enabled: false`) | `getPreset('legacy')` | Returns single cluster with all embeddings |
+| `prefixConfig.dataPrefix` | `LocalProviderConfig.documentPrefix` | Set in provider config |
+| `prefixConfig.queryPrefix` | `LocalProviderConfig.queryPrefix` | Set in provider config |
 
 ---
 

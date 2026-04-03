@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { topK, topKMulti } from '../../src/search/topk';
+import { ValidationError } from '../../src/types';
 
 describe('topK', () => {
   const query = [1, 0, 0];
@@ -23,8 +24,8 @@ describe('topK', () => {
     expect(results).toHaveLength(corpus.length);
   });
 
-  it('returns empty when k = 0', () => {
-    expect(topK(query, corpus, 0)).toEqual([]);
+  it('throws ValidationError when k = 0', () => {
+    expect(() => topK(query, corpus, 0)).toThrow(ValidationError);
   });
 
   it('supports dot product metric', () => {
@@ -76,5 +77,32 @@ describe('topKMulti', () => {
     const labels = ['x', 'y', 'z'];
     const results = topKMulti(queries, corpus, 1, { labels });
     expect(results[0][0].label).toBe('x');
+  });
+});
+
+describe('topK heap vs sort regression', () => {
+  it('heap-based path (small k) produces same results as sort-based path (large k)', () => {
+    // Build a corpus large enough that k=3 uses the heap path (k < corpus.length / 2)
+    const dim = 8;
+    const corpusSize = 50;
+    const corpus: number[][] = [];
+    for (let i = 0; i < corpusSize; i++) {
+      const v = Array.from({ length: dim }, (_, d) => Math.sin(i * 0.1 + d));
+      corpus.push(v);
+    }
+    const query = Array.from({ length: dim }, (_, d) => Math.cos(d * 0.3));
+    const labels = corpus.map((_, i) => `doc-${i}`);
+
+    // k=3 triggers heap path (3 < 50/2)
+    const heapResults = topK(query, corpus, 3, { labels });
+    // k=corpusSize triggers sort path, then we take top 3
+    const sortResults = topK(query, corpus, corpusSize, { labels }).slice(0, 3);
+
+    expect(heapResults).toHaveLength(3);
+    for (let i = 0; i < 3; i++) {
+      expect(heapResults[i].index).toBe(sortResults[i].index);
+      expect(heapResults[i].score).toBeCloseTo(sortResults[i].score);
+      expect(heapResults[i].label).toBe(sortResults[i].label);
+    }
   });
 });

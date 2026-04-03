@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { clusterEmbeddings } from '../../src/clustering/cluster';
 import { cosineSimilarity } from '../../src/math/similarity';
+import { computeCentroid } from '../../src/internal/clustering';
 
 describe('clusterEmbeddings', () => {
   it('returns empty array for empty input', () => {
@@ -53,17 +54,18 @@ describe('clusterEmbeddings', () => {
     expect(tightThreshold.length).toBeGreaterThanOrEqual(looseThreshold.length);
   });
 
-  it('filters clusters below minClusterSize', () => {
+  it('redistributes small clusters into nearest valid cluster', () => {
     const embeddings = [
       [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-      [0, 1, 0], // only 1 member — should be filtered with minClusterSize=2
+      [0, 1, 0], // only 1 member — too small, redistributed to nearest valid cluster
     ];
     const clusters = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.5,
       minClusterSize: 2,
     });
     expect(clusters).toHaveLength(1);
-    expect(clusters[0].size).toBe(5);
+    // All 6 embeddings are preserved — the small cluster member is redistributed
+    expect(clusters[0].size).toBe(6);
   });
 
   it('caps clusters at maxClusters by merging most similar', () => {
@@ -164,5 +166,32 @@ describe('clusterEmbeddings', () => {
     const embeddings = Array.from({ length: 10 }, () => [1, 0, 0]);
     const clusters = clusterEmbeddings(embeddings);
     expect(clusters.length).toBeGreaterThan(0);
+  });
+});
+
+describe('incremental centroid accuracy', () => {
+  it('incremental centroid matches full recompute within floating-point tolerance', () => {
+    // Simulate 100 random vector additions with incremental update
+    const dim = 5;
+    const members: number[][] = [];
+    let centroid = new Array(dim).fill(0);
+    let size = 0;
+
+    for (let n = 0; n < 100; n++) {
+      const v = Array.from({ length: dim }, () => Math.random() * 2 - 1);
+      members.push(v);
+      size++;
+      // Incremental update: same formula used in clusterEmbeddings
+      for (let d = 0; d < dim; d++) {
+        centroid[d] += (v[d] - centroid[d]) / size;
+      }
+    }
+
+    // Full recompute
+    const fullCentroid = computeCentroid(members);
+
+    for (let d = 0; d < dim; d++) {
+      expect(centroid[d]).toBeCloseTo(fullCentroid[d], 10);
+    }
   });
 });

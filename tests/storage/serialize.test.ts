@@ -13,20 +13,20 @@ describe('serialize / deserialize — JSON format', () => {
   it('roundtrips a single embedding', () => {
     const data = serialize(singleEmbedding, 'json');
     const result = deserialize(data, 'json');
-    expect(result).toEqual(singleEmbedding);
+    expect(result.embeddings).toEqual(singleEmbedding);
   });
 
   it('roundtrips batch embeddings', () => {
     const data = serialize(batchEmbeddings, 'json');
     const result = deserialize(data, 'json');
-    expect(result).toEqual(batchEmbeddings);
+    expect(result.embeddings).toEqual(batchEmbeddings);
   });
 
   it('preserves numeric precision', () => {
     const precise = [[1.234567890123456]];
     const data = serialize(precise, 'json');
     const result = deserialize(data, 'json');
-    expect(result[0][0]).toBe(1.234567890123456);
+    expect(result.embeddings[0][0]).toBe(1.234567890123456);
   });
 
   it('output is a valid JSON string', () => {
@@ -40,23 +40,23 @@ describe('serialize / deserialize — JSON format', () => {
   });
 });
 
-describe('serialize / deserialize — binary format', () => {
+describe('serialize / deserialize — binary format (v2)', () => {
   it('roundtrips a single embedding', () => {
     const data = serialize(singleEmbedding, 'binary');
     const result = deserialize(data, 'binary');
-    expect(result.length).toBe(1);
+    expect(result.embeddings.length).toBe(1);
     for (let i = 0; i < singleEmbedding[0].length; i++) {
-      expect(result[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
+      expect(result.embeddings[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
     }
   });
 
   it('roundtrips batch embeddings', () => {
     const data = serialize(batchEmbeddings, 'binary');
     const result = deserialize(data, 'binary');
-    expect(result.length).toBe(batchEmbeddings.length);
+    expect(result.embeddings.length).toBe(batchEmbeddings.length);
     for (let i = 0; i < batchEmbeddings.length; i++) {
       for (let j = 0; j < batchEmbeddings[i].length; j++) {
-        expect(result[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
+        expect(result.embeddings[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
       }
     }
   });
@@ -65,7 +65,7 @@ describe('serialize / deserialize — binary format', () => {
     const val = Math.fround(0.123456789);
     const data = serialize([[val]], 'binary');
     const result = deserialize(data, 'binary');
-    expect(result[0][0]).toBe(val);
+    expect(result.embeddings[0][0]).toBe(val);
   });
 
   it('output is a Uint8Array', () => {
@@ -82,19 +82,19 @@ describe('serialize / deserialize — base64 format', () => {
   it('roundtrips a single embedding', () => {
     const data = serialize(singleEmbedding, 'base64');
     const result = deserialize(data, 'base64');
-    expect(result.length).toBe(1);
+    expect(result.embeddings.length).toBe(1);
     for (let i = 0; i < singleEmbedding[0].length; i++) {
-      expect(result[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
+      expect(result.embeddings[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
     }
   });
 
   it('roundtrips batch embeddings', () => {
     const data = serialize(batchEmbeddings, 'base64');
     const result = deserialize(data, 'base64');
-    expect(result.length).toBe(batchEmbeddings.length);
+    expect(result.embeddings.length).toBe(batchEmbeddings.length);
     for (let i = 0; i < batchEmbeddings.length; i++) {
       for (let j = 0; j < batchEmbeddings[i].length; j++) {
-        expect(result[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
+        expect(result.embeddings[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
       }
     }
   });
