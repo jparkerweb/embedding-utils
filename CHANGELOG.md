@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `assignmentStrategy` option (`'centroid'` or `'average-similarity'`)
 - `legacy` preset (single cluster, clustering disabled)
 - Cluster redistribution preserves all data points
+- `clusterEmbeddings` accepts optional `labels` parameter to track source text through clustering, redistribution, and merging (each cluster's `labels` array maps 1:1 to its `members`)
 
 #### Search
 - `pairwiseSimilarity`, `mmrSearch`, `rerankResults`

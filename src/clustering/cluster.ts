@@ -90,7 +90,10 @@ function mergeTwoClusters(a: Cluster, b: Cluster, metric: SimilarityMetric): Clu
  *
  * @param embeddings - Array of embedding vectors to cluster
  * @param config - Optional clustering configuration (threshold, min size, max clusters, metric)
- * @returns Array of clusters, each with centroid, members, size, and cohesion.
+ * @param labels - Optional labels corresponding to each embedding (must match length).
+ *                 Labels are preserved through clustering, redistribution, and merging,
+ *                 so each cluster's `labels` array maps 1:1 to its `members` array.
+ * @returns Array of clusters, each with centroid, members, labels (if provided), size, and cohesion.
  *          Returns empty array for empty input.
  *
  * @example
@@ -113,12 +116,25 @@ function mergeTwoClusters(a: Cluster, b: Cluster, metric: SimilarityMetric): Clu
  * @example
  * // Disable clustering (legacy mode — single cluster with all embeddings)
  * const clusters = clusterEmbeddings(embeddings, getPreset('legacy'));
+ *
+ * @example
+ * // With labels to track which phrases belong to which cluster
+ * const phrases = ['hello world', 'goodbye world', 'hi there'];
+ * const clusters = clusterEmbeddings(embeddings, {}, phrases);
+ * clusters[0].labels; // ['hello world', 'hi there'] — phrases in this cluster
  */
 export function clusterEmbeddings(
   embeddings: number[][],
   config?: ClusteringConfig,
+  labels?: string[],
 ): Cluster[] {
   if (embeddings.length === 0) return [];
+
+  if (labels && labels.length !== embeddings.length) {
+    throw new ValidationError(
+      `Labels length (${labels.length}) must match embeddings length (${embeddings.length})`,
+    );
+  }
 
   const cfg = { ...DEFAULT_CONFIG, ...config };
 
@@ -131,12 +147,24 @@ export function clusterEmbeddings(
   const { similarityThreshold, minClusterSize, maxClusters, metric, assignmentStrategy, shuffle, shuffleSeed } = cfg;
 
   // Optionally shuffle input for order-independent clustering
-  const input = shuffle ? shuffleArray(embeddings, shuffleSeed) : embeddings;
+  // When labels are provided, we need to keep indices synchronized
+  let input: number[][];
+  let inputLabels: string[] | undefined;
+  if (shuffle) {
+    const indices = Array.from({ length: embeddings.length }, (_, i) => i);
+    const shuffled = shuffleArray(indices, shuffleSeed);
+    input = shuffled.map((i) => embeddings[i]);
+    inputLabels = labels ? shuffled.map((i) => labels[i]) : undefined;
+  } else {
+    input = embeddings;
+    inputLabels = labels;
+  }
 
   // Greedy agglomerative clustering
   const clusters: Cluster[] = [];
 
-  for (const embedding of input) {
+  for (let idx = 0; idx < input.length; idx++) {
+    const embedding = input[idx];
     let bestClusterIdx = -1;
     let bestSim = -Infinity;
 
@@ -163,6 +191,10 @@ export function clusterEmbeddings(
       // Assign to existing cluster with incremental centroid update O(d)
       const cluster = clusters[bestClusterIdx];
       cluster.members.push(embedding);
+      if (inputLabels) {
+        if (!cluster.labels) cluster.labels = [];
+        cluster.labels.push(inputLabels[idx]);
+      }
       cluster.size = cluster.members.length;
       const newSize = cluster.size;
       const centroid = cluster.centroid;
@@ -174,6 +206,7 @@ export function clusterEmbeddings(
       clusters.push({
         centroid: [...embedding],
         members: [embedding],
+        labels: inputLabels ? [inputLabels[idx]] : undefined,
         size: 1,
         cohesion: 1.0,
       });
@@ -192,7 +225,8 @@ export function clusterEmbeddings(
   if (validClusters.length > 0) {
     // Redistribute small cluster members into the nearest valid cluster
     for (const small of smallClusters) {
-      for (const member of small.members) {
+      for (let m = 0; m < small.members.length; m++) {
+        const member = small.members[m];
         let bestIdx = 0;
         let bestSim = -Infinity;
         for (let i = 0; i < validClusters.length; i++) {
@@ -206,9 +240,7 @@ export function clusterEmbeddings(
         validClusters[bestIdx].size = validClusters[bestIdx].members.length;
         if (small.labels) {
           if (!validClusters[bestIdx].labels) validClusters[bestIdx].labels = [];
-          validClusters[bestIdx].labels!.push(
-            ...small.labels.splice(0, 1),
-          );
+          validClusters[bestIdx].labels!.push(small.labels[m]);
         }
       }
     }
