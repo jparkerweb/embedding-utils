@@ -35,6 +35,8 @@ export type {
   HDBSCANResult,
   HNSWOptions,
   HNSWSearchOptions,
+  RandomProjector,
+  QuantizationCalibration,
 } from './types';
 
 export {
@@ -62,6 +64,7 @@ export {
   isNormalized,
   truncateDimensions,
   validateDimensions,
+  createRandomProjection,
 } from './math/index';
 
 export {
@@ -95,7 +98,7 @@ export { serialize, deserialize } from './storage/index';
 export type { DeserializeResult } from './storage/index';
 export { createLRUCache, warmCache } from './storage/index';
 
-export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings, hammingDistance, hammingSimilarity } from './quantization/index';
+export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings, hammingDistance, hammingSimilarity, calibrate, calibratedQuantize, calibratedDequantize } from './quantization/index';
 
 export {
   clusterEmbeddings,
@@ -137,6 +140,8 @@ export {
   getRecommendedModel,
 } from './models/index';
 
+export { recallAtK, ndcg, mrr, meanAveragePrecision } from './eval/index';
+
 export { chunkByTokenCount, chunkBySentence, chunkByStructure } from './text/index';
 export { getTokenizerInfo } from './text/index';
 export { createEmbeddingStore } from './store/index';
@@ -163,6 +168,7 @@ import {
   isNormalized as _isNormalized,
   truncateDimensions as _truncateDimensions,
   validateDimensions as _validateDimensions,
+  createRandomProjection as _createRandomProjection,
 } from './math/index';
 
 export const Math = {
@@ -179,6 +185,7 @@ export const Math = {
   isNormalized: _isNormalized,
   truncateDimensions: _truncateDimensions,
   validateDimensions: _validateDimensions,
+  createRandomProjection: _createRandomProjection,
 } as const;
 
 import {
@@ -243,4 +250,18 @@ export const Clustering = {
   mergeClusters: _mergeClusters,
   CLUSTERING_PRESETS: _CLUSTERING_PRESETS,
   getPreset: _getPreset,
+} as const;
+
+import {
+  recallAtK as _recallAtK,
+  ndcg as _ndcg,
+  mrr as _mrr,
+  meanAveragePrecision as _meanAveragePrecision,
+} from './eval/index';
+
+export const Eval = {
+  recallAtK: _recallAtK,
+  ndcg: _ndcg,
+  mrr: _mrr,
+  meanAveragePrecision: _meanAveragePrecision,
 } as const;

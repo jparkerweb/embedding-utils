@@ -757,6 +757,8 @@ export type StructuredChunkType = 'paragraph' | 'code' | 'list' | 'table' | 'hea
 
 export type { HDBSCANOptions, HDBSCANResult } from './clustering/hdbscan';
 export type { HNSWOptions, HNSWSearchOptions } from './search/hnsw';
+export type { RandomProjector } from './math/projection';
+export type { QuantizationCalibration } from './quantization/calibration';
 
 /**
  * A chunk produced by {@link chunkByStructure} with structural metadata.
