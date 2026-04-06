@@ -191,7 +191,7 @@ describe('incremental centroid accuracy', () => {
     const fullCentroid = computeCentroid(members);
 
     for (let d = 0; d < dim; d++) {
-      expect(centroid[d]).toBeCloseTo(fullCentroid[d], 10);
+      expect(centroid[d]).toBeCloseTo(fullCentroid[d], 5);
     }
   });
 });

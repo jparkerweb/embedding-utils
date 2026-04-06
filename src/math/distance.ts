@@ -9,6 +9,7 @@
 // similarity scores using the formula: similarity = 1 / (1 + distance).
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { Vector } from '../types';
 import { validateVectorPair } from '../internal/validation';
 import { cosineSimilarity } from './similarity';
 
@@ -39,7 +40,7 @@ import { cosineSimilarity } from './similarity';
  * euclideanDistance([0, 0], [3, 4]); // 5  (the classic 3-4-5 triangle)
  * euclideanDistance([1, 2], [1, 2]); // 0  (identical vectors)
  */
-export function euclideanDistance(a: number[], b: number[]): number {
+export function euclideanDistance(a: Vector, b: Vector): number {
   validateVectorPair(a, b);
   let sum = 0;
   for (let i = 0; i < a.length; i++) {
@@ -74,7 +75,7 @@ export function euclideanDistance(a: number[], b: number[]): number {
  * manhattanDistance([0, 0], [3, 4]); // 7  (|3-0| + |4-0|)
  * manhattanDistance([1, 2], [1, 2]); // 0  (identical vectors)
  */
-export function manhattanDistance(a: number[], b: number[]): number {
+export function manhattanDistance(a: Vector, b: Vector): number {
   validateVectorPair(a, b);
   let sum = 0;
   for (let i = 0; i < a.length; i++) {
@@ -98,7 +99,7 @@ export function manhattanDistance(a: number[], b: number[]): number {
  * cosineDistance([1, 0], [0, 1]);   // 1  (orthogonal)
  * cosineDistance([1, 0], [-1, 0]);  // 2  (opposite)
  */
-export function cosineDistance(a: number[], b: number[]): number {
+export function cosineDistance(a: Vector, b: Vector): number {
   validateVectorPair(a, b);
   return 1 - cosineSimilarity(a, b);
 }

@@ -1,4 +1,5 @@
 export type {
+  Vector,
   EmbeddingProvider,
   EmbedOptions,
   EmbeddingResult,
@@ -36,6 +37,8 @@ export {
   ProviderError,
   ModelNotFoundError,
 } from './types';
+
+export { toFloat32, isVector } from './internal/vector-utils';
 
 export {
   cosineSimilarity,

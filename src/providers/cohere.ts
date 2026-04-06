@@ -5,6 +5,7 @@ import type {
   CohereConfig,
 } from '../types';
 import { ProviderError, ValidationError } from '../types';
+import { toFloat32 } from '../internal/vector-utils';
 import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
 import type { CohereEmbeddingResponse } from './types';
 
@@ -125,7 +126,7 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
         }
 
         return {
-          embeddings: allEmbeddings,
+          embeddings: allEmbeddings.map(toFloat32),
           model,
           dimensions: allEmbeddings[0]?.length ?? 0,
           usage: { tokens: totalTokens },

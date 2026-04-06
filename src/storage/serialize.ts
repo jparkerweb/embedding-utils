@@ -1,11 +1,11 @@
 import { validateEmbeddings } from '../internal/validation';
-import type { SerializationMetadata } from '../types';
+import type { SerializationMetadata, Vector } from '../types';
 
 type SerializeFormat = 'json' | 'binary' | 'base64';
 
 /** Result returned by deserialize, including optional v2 metadata. */
 export interface DeserializeResult {
-  embeddings: number[][];
+  embeddings: Float32Array[];
   metadata?: SerializationMetadata;
 }
 
@@ -31,18 +31,18 @@ function base64ToUint8(base64: string): Uint8Array {
 // ─── V1 binary format (legacy, read-only) ──────────────────────────────────
 // Layout: [count:u32LE] then per embedding: [dims:u32LE][float32LE * dims]
 
-function fromBinaryV1(data: Uint8Array): number[][] {
+function fromBinaryV1(data: Uint8Array): Float32Array[] {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   let offset = 0;
 
   const count = view.getUint32(offset, true);
   offset += 4;
 
-  const embeddings: number[][] = [];
+  const embeddings: Float32Array[] = [];
   for (let i = 0; i < count; i++) {
     const dims = view.getUint32(offset, true);
     offset += 4;
-    const emb = new Array<number>(dims);
+    const emb = new Float32Array(dims);
     for (let j = 0; j < dims; j++) {
       emb[j] = view.getFloat32(offset, true);
       offset += 4;
@@ -66,7 +66,7 @@ function fromBinaryV1(data: Uint8Array): number[][] {
 const V2_VERSION = 2;
 const FLAG_HAS_METADATA = 0x01;
 
-function toBinaryV2(embeddings: number[][], metadata?: SerializationMetadata): Uint8Array {
+function toBinaryV2(embeddings: Vector[], metadata?: SerializationMetadata): Uint8Array {
   const count = embeddings.length;
   const dims = embeddings[0].length;
 
@@ -140,9 +140,9 @@ function fromBinaryV2(data: Uint8Array): DeserializeResult {
     offset += metadataLength;
   }
 
-  const embeddings: number[][] = [];
+  const embeddings: Float32Array[] = [];
   for (let i = 0; i < count; i++) {
-    const emb = new Array<number>(dims);
+    const emb = new Float32Array(dims);
     for (let j = 0; j < dims; j++) {
       emb[j] = view.getFloat32(offset, true);
       offset += 4;
@@ -165,13 +165,9 @@ function fromBinaryV2(data: Uint8Array): DeserializeResult {
  * @param metadata - Optional metadata to include in binary/base64 formats (v2 only)
  * @returns Serialized data (string for json/base64, Uint8Array for binary)
  * @throws {ValidationError} If the embeddings array is empty
- * @example
- * serialize([[1, 2], [3, 4]], 'json'); // '[[1,2],[3,4]]'
- * serialize([[1, 2]], 'base64'); // base64 string
- * serialize([[1, 2]], 'binary', { model: 'text-embedding-3-small' });
  */
 export function serialize(
-  embeddings: number[][],
+  embeddings: Vector[],
   format: SerializeFormat,
   metadata?: SerializationMetadata,
 ): string | Uint8Array {
@@ -179,7 +175,10 @@ export function serialize(
 
   switch (format) {
     case 'json':
-      return JSON.stringify(embeddings);
+      // For JSON, convert Float32Array to regular arrays for proper JSON serialization
+      return JSON.stringify(embeddings.map((e) =>
+        e instanceof Float32Array ? Array.from(e) : e,
+      ));
 
     case 'binary':
       return toBinaryV2(embeddings, metadata);
@@ -199,18 +198,17 @@ export function serialize(
  *
  * @param data - Serialized data (string for json/base64, Uint8Array for binary)
  * @param format - Input format: 'json', 'binary', or 'base64'
- * @returns Object with embeddings array and optional metadata (v2 only)
- * @example
- * deserialize('[[1,2],[3,4]]', 'json'); // { embeddings: [[1, 2], [3, 4]] }
- * deserialize(uint8Data, 'binary'); // { embeddings: [...], metadata: { model: '...' } }
+ * @returns Object with Float32Array[] embeddings and optional metadata (v2 only)
  */
 export function deserialize(
   data: string | Uint8Array,
   format: SerializeFormat,
 ): DeserializeResult {
   switch (format) {
-    case 'json':
-      return { embeddings: JSON.parse(data as string) };
+    case 'json': {
+      const parsed: number[][] = JSON.parse(data as string);
+      return { embeddings: parsed.map((e) => new Float32Array(e)) };
+    }
 
     case 'binary': {
       const bytes = data as Uint8Array;

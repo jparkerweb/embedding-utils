@@ -6,6 +6,7 @@
 // semantic features across a set of vectors.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { Vector } from '../types';
 import { validateEmbeddings } from '../internal/validation';
 
 /**
@@ -15,22 +16,17 @@ import { validateEmbeddings } from '../internal/validation';
  * embedding in the set activates a dimension strongly, that signal is
  * preserved in the pooled result.
  *
- * **When to use:** If any chunk of a document mentions "urgent," that signal
- * should be preserved in the document-level representation. Max pooling
- * ensures strong activations in any part of the input are not diluted by
- * averaging.
- *
  * @param embeddings - Array of equal-dimension embedding vectors
  * @returns A single vector with the max value at each dimension
  * @throws {ValidationError} If the array is empty or dimensions mismatch
  *
  * @example
- * maxPooling([[1, 0, 3], [2, 5, 1]]); // [2, 5, 3]
+ * maxPooling([[1, 0, 3], [2, 5, 1]]); // Float32Array [2, 5, 3]
  */
-export function maxPooling(embeddings: number[][]): number[] {
+export function maxPooling(embeddings: Vector[]): Float32Array {
   validateEmbeddings(embeddings);
   const dim = embeddings[0].length;
-  const result = [...embeddings[0]];
+  const result = new Float32Array(embeddings[0]);
   for (let i = 1; i < embeddings.length; i++) {
     for (let j = 0; j < dim; j++) {
       if (embeddings[i][j] > result[j]) {
@@ -52,12 +48,12 @@ export function maxPooling(embeddings: number[][]): number[] {
  * @throws {ValidationError} If the array is empty or dimensions mismatch
  *
  * @example
- * minPooling([[1, 0, 3], [2, 5, 1]]); // [1, 0, 1]
+ * minPooling([[1, 0, 3], [2, 5, 1]]); // Float32Array [1, 0, 1]
  */
-export function minPooling(embeddings: number[][]): number[] {
+export function minPooling(embeddings: Vector[]): Float32Array {
   validateEmbeddings(embeddings);
   const dim = embeddings[0].length;
-  const result = [...embeddings[0]];
+  const result = new Float32Array(embeddings[0]);
   for (let i = 1; i < embeddings.length; i++) {
     for (let j = 0; j < dim; j++) {
       if (embeddings[i][j] < result[j]) {

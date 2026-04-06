@@ -1,7 +1,8 @@
-import type { Cluster, ClusteringConfig, SimilarityMetric } from '../types';
+import type { Cluster, ClusteringConfig, SimilarityMetric, Vector } from '../types';
 import { ValidationError } from '../types';
 import { computeScore } from '../internal/metrics';
 import { computeCentroid, computePairwiseCohesion } from '../internal/clustering';
+import { toFloat32 } from '../internal/vector-utils';
 import { shuffleArray } from '../internal/random';
 
 const DEFAULT_CONFIG: Required<ClusteringConfig> = {
@@ -51,80 +52,13 @@ function mergeTwoClusters(a: Cluster, b: Cluster, metric: SimilarityMetric): Clu
 /**
  * Clusters embeddings using greedy agglomerative clustering.
  *
- * ## Algorithm
- *
- * 1. **Greedy assignment:** Iterate through embeddings sequentially. For each
- *    embedding, find the most similar existing cluster centroid. If the
- *    similarity meets the threshold, assign it to that cluster and recompute
- *    the centroid. Otherwise, create a new cluster.
- *
- * 2. **Small-cluster redistribution:** Clusters with fewer members than
- *    `minClusterSize` have their members redistributed to the nearest valid
- *    cluster. If ALL clusters are small, they are combined into one cluster.
- *    This ensures no data points are silently discarded.
- *
- * 3. **Merge to limit:** If there are still more clusters than `maxClusters`,
- *    the two most similar clusters (by centroid similarity) are merged
- *    repeatedly until the limit is reached.
- *
- * 4. **Final cohesion:** Pairwise cohesion is computed for all resulting clusters.
- *
- * ## Configuration
- *
- * Use {@link getPreset} for common configurations, or pass a custom
- * {@link ClusteringConfig} object. Defaults:
- * - `similarityThreshold`: 0.9
- * - `minClusterSize`: 5
- * - `maxClusters`: 5
- * - `metric`: 'cosine'
- *
- * ## Use cases
- *
- * - **Topic discovery:** Group support tickets, reviews, or documents into
- *   natural topic clusters without predefined categories.
- * - **Training data clustering:** Group training phrases by semantic similarity
- *   to create multiple weighted-average embeddings per topic (as used by
- *   fast-topic-analysis).
- * - **Content deduplication:** Cluster near-identical content and keep only
- *   cluster centroids.
- *
  * @param embeddings - Array of embedding vectors to cluster
- * @param config - Optional clustering configuration (threshold, min size, max clusters, metric)
- * @param labels - Optional labels corresponding to each embedding (must match length).
- *                 Labels are preserved through clustering, redistribution, and merging,
- *                 so each cluster's `labels` array maps 1:1 to its `members` array.
- * @returns Array of clusters, each with centroid, members, labels (if provided), size, and cohesion.
- *          Returns empty array for empty input.
- *
- * @example
- * // Basic clustering with defaults
- * const clusters = clusterEmbeddings(embeddings);
- *
- * @example
- * // Custom configuration
- * const clusters = clusterEmbeddings(embeddings, {
- *   similarityThreshold: 0.85,
- *   minClusterSize: 3,
- *   maxClusters: 10,
- *   metric: 'cosine',
- * });
- *
- * @example
- * // Using a preset
- * const clusters = clusterEmbeddings(embeddings, getPreset('high-precision'));
- *
- * @example
- * // Disable clustering (legacy mode — single cluster with all embeddings)
- * const clusters = clusterEmbeddings(embeddings, getPreset('legacy'));
- *
- * @example
- * // With labels to track which phrases belong to which cluster
- * const phrases = ['hello world', 'goodbye world', 'hi there'];
- * const clusters = clusterEmbeddings(embeddings, {}, phrases);
- * clusters[0].labels; // ['hello world', 'hi there'] — phrases in this cluster
+ * @param config - Optional clustering configuration
+ * @param labels - Optional labels corresponding to each embedding
+ * @returns Array of clusters with Float32Array centroids and members
  */
 export function clusterEmbeddings(
-  embeddings: number[][],
+  embeddings: Vector[],
   config?: ClusteringConfig,
   labels?: string[],
 ): Cluster[] {
@@ -146,17 +80,19 @@ export function clusterEmbeddings(
   }
   const { similarityThreshold, minClusterSize, maxClusters, metric, assignmentStrategy, shuffle, shuffleSeed } = cfg;
 
+  // Convert all inputs to Float32Array up front
+  const float32Embeddings = embeddings.map((e) => toFloat32(e));
+
   // Optionally shuffle input for order-independent clustering
-  // When labels are provided, we need to keep indices synchronized
-  let input: number[][];
+  let input: Float32Array[];
   let inputLabels: string[] | undefined;
   if (shuffle) {
-    const indices = Array.from({ length: embeddings.length }, (_, i) => i);
+    const indices = Array.from({ length: float32Embeddings.length }, (_, i) => i);
     const shuffled = shuffleArray(indices, shuffleSeed);
-    input = shuffled.map((i) => embeddings[i]);
+    input = shuffled.map((i) => float32Embeddings[i]);
     inputLabels = labels ? shuffled.map((i) => labels[i]) : undefined;
   } else {
-    input = embeddings;
+    input = float32Embeddings;
     inputLabels = labels;
   }
 
@@ -171,14 +107,12 @@ export function clusterEmbeddings(
     for (let i = 0; i < clusters.length; i++) {
       let sim: number;
       if (assignmentStrategy === 'average-similarity') {
-        // Average similarity to all current members
         let total = 0;
         for (const member of clusters[i].members) {
           total += computeScore(embedding, member, metric);
         }
         sim = total / clusters[i].members.length;
       } else {
-        // Default: compare to centroid
         sim = computeScore(embedding, clusters[i].centroid, metric);
       }
       if (sim >= similarityThreshold && sim > bestSim) {
@@ -204,7 +138,7 @@ export function clusterEmbeddings(
     } else {
       // Create new cluster
       clusters.push({
-        centroid: [...embedding],
+        centroid: new Float32Array(embedding),
         members: [embedding],
         labels: inputLabels ? [inputLabels[idx]] : undefined,
         size: 1,
@@ -214,9 +148,6 @@ export function clusterEmbeddings(
   }
 
   // Separate clusters into valid (>= minClusterSize) and small (< minClusterSize).
-  // Small clusters have their members redistributed to the nearest valid cluster
-  // rather than being silently dropped. This preserves all data points and matches
-  // the behavior of topic analysis pipelines like fast-topic-analysis.
   const validClusters = clusters.filter((c) => c.size >= minClusterSize);
   const smallClusters = clusters.filter((c) => c.size < minClusterSize);
 
@@ -251,7 +182,7 @@ export function clusterEmbeddings(
     result = validClusters;
   } else if (clusters.length > 0) {
     // All clusters are small -- combine everything into one cluster
-    const allMembers: number[][] = [];
+    const allMembers: Float32Array[] = [];
     const allLabels: string[] = [];
     let hasLabels = false;
     for (const cluster of clusters) {
@@ -276,7 +207,6 @@ export function clusterEmbeddings(
   while (result.length > maxClusters) {
     const [i, j] = findMostSimilarPair(result, metric);
     const merged = mergeTwoClusters(result[i], result[j], metric);
-    // Remove j first (higher index) then i
     result.splice(j, 1);
     result.splice(i, 1);
     result.push(merged);

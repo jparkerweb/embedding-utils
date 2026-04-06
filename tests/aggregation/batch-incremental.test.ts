@@ -15,11 +15,12 @@ describe('batchIncrementalAverage', () => {
     const fullAvg = averageEmbeddings(vectors);
 
     // Incrementally: start with first vector, then batch the remaining 9
-    let currentAvg = vectors[0];
+    let currentAvg: number[] | Float32Array = vectors[0];
     currentAvg = batchIncrementalAverage(currentAvg, vectors.slice(1), 1);
 
+    expect(currentAvg).toBeInstanceOf(Float32Array);
     for (let d = 0; d < fullAvg.length; d++) {
-      expect(currentAvg[d]).toBeCloseTo(fullAvg[d], 10);
+      expect(currentAvg[d]).toBeCloseTo(fullAvg[d], 5);
     }
   });
 
@@ -27,12 +28,12 @@ describe('batchIncrementalAverage', () => {
     const vectors = Array.from({ length: 9 }, (_, i) => [i + 1, (i + 1) * 2, (i + 1) * 3]);
     const fullAvg = averageEmbeddings(vectors);
 
-    let currentAvg = averageEmbeddings(vectors.slice(0, 3));
+    let currentAvg: number[] | Float32Array = averageEmbeddings(vectors.slice(0, 3));
     currentAvg = batchIncrementalAverage(currentAvg, vectors.slice(3, 6), 3);
     currentAvg = batchIncrementalAverage(currentAvg, vectors.slice(6, 9), 6);
 
     for (let d = 0; d < fullAvg.length; d++) {
-      expect(currentAvg[d]).toBeCloseTo(fullAvg[d], 10);
+      expect(currentAvg[d]).toBeCloseTo(fullAvg[d], 5);
     }
   });
 
@@ -55,14 +56,16 @@ describe('batchIncrementalAverage', () => {
   it('returns the blended value for a single-item batch', () => {
     const currentAvg = [2, 4, 6];
     const result = batchIncrementalAverage(currentAvg, [[4, 8, 12]], 1);
+    expect(result).toBeInstanceOf(Float32Array);
     // (2*1 + 4) / 2 = 3, (4*1 + 8) / 2 = 6, (6*1 + 12) / 2 = 9
-    expect(result).toEqual([3, 6, 9]);
+    expect(Array.from(result)).toEqual([3, 6, 9]);
   });
 
   it('with count=0, single-item batch returns that item itself', () => {
     const item = [7, 8, 9];
     // count=0 means currentAvg has no weight; result = (0*currentAvg + item) / 1 = item
     const result = batchIncrementalAverage([0, 0, 0], [item], 0);
-    expect(result).toEqual(item);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([7, 8, 9]);
   });
 });

@@ -48,9 +48,10 @@ describe('topK', () => {
     expect(results[1].label).toBe('c');
   });
 
-  it('includes embedding in results', () => {
+  it('includes embedding in results as Float32Array', () => {
     const results = topK(query, corpus, 1);
-    expect(results[0].embedding).toEqual([1, 0, 0]);
+    expect(results[0].embedding).toBeInstanceOf(Float32Array);
+    expect(Array.from(results[0].embedding)).toEqual([1, 0, 0]);
   });
 });
 

@@ -5,6 +5,7 @@ import type {
   GoogleVertexConfig,
 } from '../types';
 import { ProviderError, ValidationError } from '../types';
+import { toFloat32 } from '../internal/vector-utils';
 import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
 import type { GoogleVertexEmbeddingResponse } from './types';
 
@@ -128,7 +129,7 @@ export function createGoogleVertexProvider(
         }
 
         return {
-          embeddings: allEmbeddings,
+          embeddings: allEmbeddings.map(toFloat32),
           model,
           dimensions: allEmbeddings[0]?.length ?? 0,
         };

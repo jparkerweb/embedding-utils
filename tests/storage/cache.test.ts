@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createLRUCache } from '../../src/storage/cache';
 import type { CacheProvider } from '../../src/types';
 
+const f = (arr: number[]) => new Float32Array(arr);
+
 describe('createLRUCache', () => {
   let cache: CacheProvider;
 
@@ -18,10 +20,12 @@ describe('createLRUCache', () => {
   });
 
   it('basic get/set', async () => {
-    const value = [[1, 2, 3]];
+    const value = [f([1, 2, 3])];
     await cache.set('key1', value);
     const result = await cache.get('key1');
-    expect(result).toEqual(value);
+    expect(result).toBeDefined();
+    expect(result![0]).toBeInstanceOf(Float32Array);
+    expect(Array.from(result![0])).toEqual([1, 2, 3]);
   });
 
   it('get returns undefined for missing key', async () => {
@@ -30,17 +34,17 @@ describe('createLRUCache', () => {
   });
 
   it('has returns true for existing keys', async () => {
-    await cache.set('key1', [[1]]);
+    await cache.set('key1', [f([1])]);
     expect(await cache.has('key1')).toBe(true);
     expect(await cache.has('missing')).toBe(false);
   });
 
   it('evicts least recently used when exceeding maxSize', async () => {
     const small = createLRUCache({ maxSize: 3 });
-    await small.set('a', [[1]]);
-    await small.set('b', [[2]]);
-    await small.set('c', [[3]]);
-    await small.set('d', [[4]]); // should evict 'a'
+    await small.set('a', [f([1])]);
+    await small.set('b', [f([2])]);
+    await small.set('c', [f([3])]);
+    await small.set('d', [f([4])]); // should evict 'a'
 
     expect(await small.has('a')).toBe(false);
     expect(await small.has('b')).toBe(true);
@@ -52,7 +56,7 @@ describe('createLRUCache', () => {
     vi.useFakeTimers();
     const ttlCache = createLRUCache({ ttl: 100 });
 
-    await ttlCache.set('key1', [[1]]);
+    await ttlCache.set('key1', [f([1])]);
     expect(await ttlCache.has('key1')).toBe(true);
 
     vi.advanceTimersByTime(150);
@@ -63,15 +67,15 @@ describe('createLRUCache', () => {
   });
 
   it('delete removes item', async () => {
-    await cache.set('key1', [[1]]);
+    await cache.set('key1', [f([1])]);
     await cache.delete('key1');
     expect(await cache.has('key1')).toBe(false);
     expect(await cache.get('key1')).toBeUndefined();
   });
 
   it('clear empties cache', async () => {
-    await cache.set('a', [[1]]);
-    await cache.set('b', [[2]]);
+    await cache.set('a', [f([1])]);
+    await cache.set('b', [f([2])]);
     await cache.clear();
     expect(await cache.has('a')).toBe(false);
     expect(await cache.has('b')).toBe(false);
@@ -79,15 +83,15 @@ describe('createLRUCache', () => {
 
   it('access order updated on get (recently accessed not evicted)', async () => {
     const small = createLRUCache({ maxSize: 3 });
-    await small.set('a', [[1]]);
-    await small.set('b', [[2]]);
-    await small.set('c', [[3]]);
+    await small.set('a', [f([1])]);
+    await small.set('b', [f([2])]);
+    await small.set('c', [f([3])]);
 
     // Access 'a' to move it to most recent
     await small.get('a');
 
     // Adding 'd' should evict 'b' (least recently used), not 'a'
-    await small.set('d', [[4]]);
+    await small.set('d', [f([4])]);
 
     expect(await small.has('a')).toBe(true);
     expect(await small.has('b')).toBe(false);
@@ -97,17 +101,19 @@ describe('createLRUCache', () => {
 
   it('set existing key updates value and moves to front', async () => {
     const small = createLRUCache({ maxSize: 3 });
-    await small.set('a', [[1]]);
-    await small.set('b', [[2]]);
-    await small.set('c', [[3]]);
+    await small.set('a', [f([1])]);
+    await small.set('b', [f([2])]);
+    await small.set('c', [f([3])]);
 
     // Update 'a' — moves to front
-    await small.set('a', [[10]]);
+    await small.set('a', [f([10])]);
 
     // Adding 'd' should evict 'b' (now least recent)
-    await small.set('d', [[4]]);
+    await small.set('d', [f([4])]);
 
-    expect(await small.get('a')).toEqual([[10]]);
+    const a = await small.get('a');
+    expect(a![0]).toBeInstanceOf(Float32Array);
+    expect(Array.from(a![0])).toEqual([10]);
     expect(await small.has('b')).toBe(false);
   });
 
@@ -115,7 +121,7 @@ describe('createLRUCache', () => {
     const defaultCache = createLRUCache();
     // Add 1001 items — first one should be evicted
     for (let i = 0; i < 1001; i++) {
-      await defaultCache.set(`key${i}`, [[i]]);
+      await defaultCache.set(`key${i}`, [f([i])]);
     }
     expect(await defaultCache.has('key0')).toBe(false);
     expect(await defaultCache.has('key1')).toBe(true);

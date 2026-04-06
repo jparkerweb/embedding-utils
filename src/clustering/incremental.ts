@@ -1,13 +1,14 @@
-import type { Cluster, ClusteringConfig, ClusterStats, SimilarityMetric } from '../types';
+import type { Cluster, ClusteringConfig, ClusterStats, SimilarityMetric, Vector } from '../types';
 import { computeScore } from '../internal/metrics';
 import { computePairwiseCohesion } from '../internal/clustering';
+import { toFloat32 } from '../internal/vector-utils';
 import { incrementalAverage } from '../aggregation/average';
 import { clusterEmbeddings } from './cluster';
 import { clusterStats } from './statistics';
 
 interface InternalCluster {
-  centroid: number[];
-  members: number[][];
+  centroid: Float32Array;
+  members: Float32Array[];
   labels: string[];
 }
 
@@ -16,13 +17,6 @@ interface InternalCluster {
  * or creates new clusters when no existing cluster is similar enough.
  *
  * Use {@link rebalance} to re-optimize assignments via full reclustering.
- *
- * @example
- * const clusterer = new IncrementalClusterer({ similarityThreshold: 0.8 });
- * clusterer.addEmbedding([0.1, 0.2, 0.3], 'doc-1');
- * clusterer.addEmbedding([0.1, 0.2, 0.31], 'doc-2'); // joins existing cluster
- * clusterer.addEmbedding([0.9, 0.8, 0.7], 'doc-3'); // creates new cluster
- * console.log(clusterer.getClusters()); // 2 clusters
  */
 export class IncrementalClusterer {
   private clusters: InternalCluster[] = [];
@@ -41,12 +35,13 @@ export class IncrementalClusterer {
    * Assigns an embedding to the nearest cluster or creates a new one if
    * similarity to all existing centroids is below the threshold.
    */
-  addEmbedding(embedding: number[], label?: string): void {
+  addEmbedding(embedding: Vector, label?: string): void {
+    const f32 = toFloat32(embedding);
     let bestIdx = -1;
     let bestScore = -Infinity;
 
     for (let i = 0; i < this.clusters.length; i++) {
-      const score = computeScore(embedding, this.clusters[i].centroid, this.metric);
+      const score = computeScore(f32, this.clusters[i].centroid, this.metric);
       if (score > bestScore) {
         bestScore = score;
         bestIdx = i;
@@ -55,13 +50,13 @@ export class IncrementalClusterer {
 
     if (bestIdx >= 0 && bestScore >= this.threshold) {
       const cluster = this.clusters[bestIdx];
-      cluster.centroid = incrementalAverage(cluster.centroid, embedding, cluster.members.length);
-      cluster.members.push(embedding);
+      cluster.centroid = incrementalAverage(cluster.centroid, f32, cluster.members.length);
+      cluster.members.push(f32);
       if (label !== undefined) cluster.labels.push(label);
     } else {
       this.clusters.push({
-        centroid: embedding.slice(),
-        members: [embedding],
+        centroid: new Float32Array(f32),
+        members: [f32],
         labels: label !== undefined ? [label] : [],
       });
     }
@@ -70,7 +65,7 @@ export class IncrementalClusterer {
   }
 
   /** Calls {@link addEmbedding} for each item in the batch. */
-  addBatch(embeddings: number[][], labels?: string[]): void {
+  addBatch(embeddings: Vector[], labels?: string[]): void {
     for (let i = 0; i < embeddings.length; i++) {
       this.addEmbedding(embeddings[i], labels?.[i]);
     }
@@ -83,7 +78,7 @@ export class IncrementalClusterer {
   rebalance(): void {
     if (this.totalSize === 0) return;
 
-    const allMembers: number[][] = [];
+    const allMembers: Float32Array[] = [];
     const allLabels: string[] = [];
 
     for (const cluster of this.clusters) {

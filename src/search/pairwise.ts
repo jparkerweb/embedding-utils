@@ -1,13 +1,9 @@
 import { computeScore } from '../internal/metrics';
 import { DimensionMismatchError, ValidationError } from '../types';
-import type { SimilarityMetric } from '../types';
+import type { SimilarityMetric, Vector } from '../types';
 
 /**
  * Computes element-wise similarity between two lists of embeddings.
- *
- * For each index `i`, computes the similarity between `listA[i]` and `listB[i]`
- * using the specified metric. Both lists must have the same length, and each
- * pair must have matching dimensions.
  *
  * @param listA - First list of embedding vectors
  * @param listB - Second list of embedding vectors (same length as listA)
@@ -15,8 +11,8 @@ import type { SimilarityMetric } from '../types';
  * @returns Array of similarity scores, one per pair
  */
 export function pairwiseSimilarity(
-  listA: number[][],
-  listB: number[][],
+  listA: Vector[],
+  listB: Vector[],
   metric: SimilarityMetric = 'cosine',
 ): number[] {
   if (listA.length !== listB.length) {

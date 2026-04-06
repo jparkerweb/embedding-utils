@@ -7,6 +7,7 @@ import type {
 } from '../types';
 import { EmbeddingUtilsError, ModelNotFoundError } from '../types';
 import { truncateDimensions } from '../math/dimensions';
+import { toFloat32 } from '../internal/vector-utils';
 import { createLRUCache } from '../storage/cache';
 
 const DEFAULT_MODEL = 'Xenova/all-MiniLM-L12-v2';
@@ -114,7 +115,7 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
 
       const pipe = await getPipeline();
       const output = await pipe(prefixedInputs, { pooling: 'mean', normalize: true });
-      let embeddings: number[][] = output.tolist();
+      let embeddings: Float32Array[] = output.tolist().map(toFloat32);
 
       // Cache the raw embeddings
       await cache.set(cacheKey, embeddings);

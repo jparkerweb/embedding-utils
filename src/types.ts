@@ -102,6 +102,19 @@ export class ModelNotFoundError extends EmbeddingUtilsError {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * A vector of numeric values, accepted by all embedding-utils functions.
+ *
+ * Functions that **accept** vectors take `Vector` (both `number[]` and
+ * `Float32Array` are valid inputs). Functions that **return** vectors
+ * always return `Float32Array` for memory efficiency and type safety.
+ *
+ * **Migration from v0.2:** If your code destructures or spreads returned
+ * vectors, note that `[...float32Array]` produces `number[]` and
+ * `JSON.stringify(float32Array)` produces `{"0": val, ...}` not `[val, ...]`.
+ */
+export type Vector = number[] | Float32Array;
+
+/**
  * Supported similarity / distance metrics used across search, clustering,
  * and aggregation functions.
  *
@@ -189,8 +202,8 @@ export interface EmbedOptions {
  * model, dimensions, and token usage.
  */
 export interface EmbeddingResult {
-  /** Array of embedding vectors. Each inner array has `dimensions` elements. */
-  embeddings: number[][];
+  /** Array of embedding vectors. Each vector is a Float32Array with `dimensions` elements. */
+  embeddings: Float32Array[];
   /** Model identifier that was used for generation (e.g., 'text-embedding-3-small'). */
   model: string;
   /** Number of dimensions in each embedding vector. */
@@ -240,7 +253,7 @@ export interface SearchResult {
   /** Similarity score computed using the specified metric. Higher = more similar. */
   score: number;
   /** The matched embedding vector. */
-  embedding: number[];
+  embedding: Float32Array;
   /** Optional label from the `labels` array passed to the search function. */
   label?: string;
 }
@@ -271,9 +284,9 @@ export interface SearchOptions {
  */
 export interface Cluster {
   /** Mean vector of all cluster members. Updated after every assignment or merge. */
-  centroid: number[];
+  centroid: Float32Array;
   /** All embedding vectors belonging to this cluster. */
-  members: number[][];
+  members: Float32Array[];
   /** Optional labels corresponding to each member (preserves order). */
   labels?: string[];
   /** Number of members in this cluster (always equals `members.length`). */
@@ -442,9 +455,9 @@ export interface CacheStats {
  */
 export interface CacheProvider {
   /** Retrieve cached embeddings by key. Returns undefined on cache miss or expiration. */
-  get(key: string): Promise<number[][] | undefined>;
+  get(key: string): Promise<Float32Array[] | undefined>;
   /** Store embeddings under a key. Evicts the oldest entry if the cache is full. */
-  set(key: string, value: number[][]): Promise<void>;
+  set(key: string, value: Float32Array[]): Promise<void>;
   /** Check if a key exists and has not expired. */
   has(key: string): Promise<boolean>;
   /** Remove a specific entry from the cache. */
@@ -621,7 +634,7 @@ export interface StoredItem {
   /** Unique identifier for this item. */
   id: string;
   /** The embedding vector. */
-  embedding: number[];
+  embedding: Float32Array;
   /** Optional metadata associated with this item. */
   metadata?: Record<string, unknown>;
 }

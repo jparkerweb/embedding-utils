@@ -1,4 +1,4 @@
-import type { ClusterStats, SimilarityMetric } from '../types';
+import type { ClusterStats, SimilarityMetric, Vector } from '../types';
 import { computeScore, computeDistance } from '../internal/metrics';
 
 /**
@@ -9,7 +9,7 @@ import { computeScore, computeDistance } from '../internal/metrics';
  * @returns ClusterStats with min/max/mean/median similarity, radius, and outlier indices
  */
 export function clusterStats(
-  cluster: { centroid: number[]; members: number[][] },
+  cluster: { centroid: Vector; members: Vector[] },
   metric: SimilarityMetric = 'cosine',
 ): ClusterStats {
   const { centroid, members } = cluster;
@@ -64,7 +64,7 @@ export function clusterStats(
  * @returns Array of member indices that are outliers
  */
 export function detectOutliers(
-  cluster: { centroid: number[]; members: number[][] },
+  cluster: { centroid: Vector; members: Vector[] },
   options?: { threshold?: number; metric?: SimilarityMetric },
 ): number[] {
   const metric = options?.metric ?? 'cosine';
@@ -98,8 +98,8 @@ export function detectOutliers(
  * @returns Distance between centroids (0 = identical, ~1 = orthogonal for cosine)
  */
 export function centroidDrift(
-  oldCentroid: number[],
-  newCentroid: number[],
+  oldCentroid: Vector,
+  newCentroid: Vector,
   metric: SimilarityMetric = 'cosine',
 ): number {
   return computeDistance(oldCentroid, newCentroid, metric);

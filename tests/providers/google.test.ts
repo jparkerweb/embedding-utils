@@ -142,7 +142,11 @@ describe('createGoogleVertexProvider', () => {
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
     expect(body.instances).toEqual([{ content: 'a' }, { content: 'b' }]);
 
-    expect(result.embeddings).toEqual([[0.1, 0.2], [0.3, 0.4]]);
+    expect(result.embeddings).toHaveLength(2);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[1]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(2);
+    expect(result.embeddings[1]).toHaveLength(2);
   });
 
   it('should parse predictions response correctly', async () => {
@@ -151,7 +155,9 @@ describe('createGoogleVertexProvider', () => {
     const provider = createGoogleVertexProvider(baseConfig);
     const result = await provider.embed('test');
 
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
     expect(result.model).toBe('text-embedding-005');
     expect(result.dimensions).toBe(3);
   });
@@ -187,7 +193,9 @@ describe('createGoogleVertexProvider', () => {
     const result = await provider.embed('test');
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
   });
 
   it('should retry on 5xx then succeed', async () => {
@@ -202,7 +210,9 @@ describe('createGoogleVertexProvider', () => {
     const result = await provider.embed('test');
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
   });
 
   it('should throw ProviderError on non-retryable errors', async () => {

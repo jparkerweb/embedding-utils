@@ -9,11 +9,14 @@ describe('maxPooling', () => {
       [4, 2, 6],
       [3, 8, 1],
     ]);
-    expect(result).toEqual([4, 8, 6]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([4, 8, 6]);
   });
 
   it('returns the vector itself for a single input', () => {
-    expect(maxPooling([[7, 3, 9]])).toEqual([7, 3, 9]);
+    const result = maxPooling([[7, 3, 9]]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([7, 3, 9]);
   });
 
   it('throws ValidationError for empty array', () => {
@@ -29,7 +32,14 @@ describe('maxPooling', () => {
       [-5, -1],
       [-3, -4],
     ]);
-    expect(result).toEqual([-3, -1]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([-3, -1]);
+  });
+
+  it('accepts Float32Array inputs', () => {
+    const result = maxPooling([new Float32Array([1, 5]), new Float32Array([4, 2])]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([4, 5]);
   });
 });
 
@@ -40,11 +50,14 @@ describe('minPooling', () => {
       [4, 2, 6],
       [3, 8, 1],
     ]);
-    expect(result).toEqual([1, 2, 1]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([1, 2, 1]);
   });
 
   it('returns the vector itself for a single input', () => {
-    expect(minPooling([[7, 3, 9]])).toEqual([7, 3, 9]);
+    const result = minPooling([[7, 3, 9]]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([7, 3, 9]);
   });
 
   it('throws ValidationError for empty array', () => {
@@ -60,6 +73,7 @@ describe('minPooling', () => {
       [-5, -1],
       [-3, -4],
     ]);
-    expect(result).toEqual([-5, -4]);
+    expect(result).toBeInstanceOf(Float32Array);
+    expect(Array.from(result)).toEqual([-5, -4]);
   });
 });

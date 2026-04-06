@@ -1,4 +1,4 @@
-import type { Cluster, SimilarityMetric } from '../types';
+import type { Cluster, SimilarityMetric, Vector } from '../types';
 import { computeScore } from '../internal/metrics';
 import { computeCentroid, computePairwiseCohesion } from '../internal/clustering';
 
@@ -46,7 +46,7 @@ import { computeCentroid, computePairwiseCohesion } from '../internal/clustering
  * }
  */
 export function assignToCluster(
-  embedding: number[],
+  embedding: Vector,
   clusters: Cluster[],
   options?: { metric?: SimilarityMetric; threshold?: number },
 ): { clusterIndex: number; similarity: number } {

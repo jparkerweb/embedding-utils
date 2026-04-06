@@ -1,5 +1,6 @@
 import { computeScore } from '../internal/metrics';
-import type { SimilarityMetric, StoredItem } from '../types';
+import { toFloat32 } from '../internal/vector-utils';
+import type { SimilarityMetric, StoredItem, Vector } from '../types';
 
 /**
  * Stateful search index with CRUD operations and brute-force search.
@@ -21,12 +22,12 @@ export class SearchIndex {
   }
 
   /** Add a single item. Overwrites if ID already exists. */
-  add(id: string, embedding: number[], metadata?: Record<string, unknown>): void {
-    this.items.set(id, { id, embedding, ...(metadata !== undefined ? { metadata } : {}) });
+  add(id: string, embedding: Vector, metadata?: Record<string, unknown>): void {
+    this.items.set(id, { id, embedding: toFloat32(embedding), ...(metadata !== undefined ? { metadata } : {}) });
   }
 
   /** Add multiple items at once. */
-  addBatch(items: Array<{ id: string; embedding: number[]; metadata?: Record<string, unknown> }>): void {
+  addBatch(items: Array<{ id: string; embedding: Vector; metadata?: Record<string, unknown> }>): void {
     for (const item of items) {
       this.add(item.id, item.embedding, item.metadata);
     }
@@ -39,7 +40,7 @@ export class SearchIndex {
 
   /** Search for the most similar items to a query vector. */
   search(
-    query: number[],
+    query: Vector,
     options?: {
       topK?: number;
       threshold?: number;
