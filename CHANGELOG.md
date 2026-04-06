@@ -4,6 +4,57 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-04-06
+
+### Breaking Changes
+
+- **Float32Array migration:** All vector-returning functions now return `Float32Array` instead of `number[]`. This affects `provider.embed()`, `normalize()`, `topK()`, `clusterEmbeddings()`, `deserialize()`, and all other functions that produce embeddings. All functions still accept both `number[]` and `Float32Array` as input. See the Migration Guide in README for common patterns and gotchas.
+- **`truncateDimensions` auto-normalizes:** Output vectors are now L2-normalized after truncation, ready for cosine similarity without a separate `normalize()` call.
+
+### New Features
+
+#### Search
+- **HNSW Index (FR-8):** `HNSWIndex` class for approximate nearest neighbor search with configurable M, efConstruction, efSearch, all four similarity metrics, string IDs with metadata, filtered search, and binary serialization/deserialization
+- **Reciprocal Rank Fusion (FR-9):** `fuseRankedLists()` merges multiple ranked lists without score calibration
+- **Score Normalization (FR-10):** `normalizeScores()` with min-max, z-score, and sigmoid methods
+
+#### Clustering
+- **HDBSCAN (FR-7):** `hdbscan()` density-based clustering with automatic cluster count detection, noise point identification, and configurable minClusterSize/minSamples/metric
+
+#### Evaluation
+- **Retrieval Metrics (FR-11):** `recallAtK()`, `ndcg()`, `mrr()`, `meanAveragePrecision()` for measuring search quality against ground truth
+
+#### Pipeline
+- **Async Embedding Pipeline (FR-13):** `createEmbeddingPipeline()` with configurable batch size, concurrency, token-bucket rate limiting, progress callbacks, and checkpoint/resume support
+
+#### Math
+- **Random Projection (FR-12):** `createRandomProjection()` for Johnson-Lindenstrauss dimensionality reduction with deterministic seeding and batch projection
+
+#### Quantization
+- **Calibrated Quantization (FR-15):** `calibrate()`, `calibratedQuantize()`, `calibratedDequantize()` learn per-dimension value ranges for tighter int8 mapping
+- **Hamming Distance (FR-14):** `hammingDistance()` and `hammingSimilarity()` for fast binary vector comparison
+
+#### Text
+- **Markdown-Aware Chunking (FR-6):** `chunkByStructure()` splits markdown respecting code fences, lists, tables, and headings with breadcrumb metadata
+
+#### Providers
+- **New provider presets:** `together`, `fireworks`, `nomic`, `mixedbread` via `createProvider()` factory
+
+#### Foundation
+- **Float32Array migration (FR-1):** All internal vector operations use Float32Array for ~50% memory reduction and improved computation speed
+- **Vector utilities:** `toFloat32()` conversion helper and `isVector()` type guard
+
+### New Namespaces
+
+- `Eval` — `{ recallAtK, ndcg, mrr, meanAveragePrecision }`
+- `Pipeline` — `{ createEmbeddingPipeline, TokenBucketRateLimiter }`
+
+### Updated Namespaces
+
+- `Search` — added `HNSWIndex`, `fuseRankedLists`, `normalizeScores`
+- `Clustering` — added `hdbscan`
+- `Math` — added `createRandomProjection`
+
 ## [0.2.0] - 2026-04-03
 
 ### Bug Fixes
