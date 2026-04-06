@@ -751,6 +751,12 @@ export type NormalizationMethod = 'min-max' | 'z-score' | 'sigmoid';
  */
 export type StructuredChunkType = 'paragraph' | 'code' | 'list' | 'table' | 'heading';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// HDBSCAN Clustering Types (re-exported from clustering/hdbscan.ts)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type { HDBSCANOptions, HDBSCANResult } from './clustering/hdbscan';
+
 /**
  * A chunk produced by {@link chunkByStructure} with structural metadata.
  *

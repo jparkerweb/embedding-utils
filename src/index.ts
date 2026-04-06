@@ -31,6 +31,8 @@ export type {
   NormalizationMethod,
   StructuredChunk,
   StructuredChunkType,
+  HDBSCANOptions,
+  HDBSCANResult,
 } from './types';
 
 export {
@@ -107,6 +109,7 @@ export {
   detectOutliers,
   centroidDrift,
   IncrementalClusterer,
+  hdbscan,
 } from './clustering/index';
 
 export {
@@ -209,6 +212,7 @@ import {
   detectOutliers as _detectOutliers,
   centroidDrift as _centroidDrift,
   IncrementalClusterer as _IncrementalClusterer,
+  hdbscan as _hdbscan,
   cohesionScore as _cohesionScore,
   centroidCohesion as _centroidCohesion,
   silhouetteScore as _silhouetteScore,
@@ -226,6 +230,7 @@ export const Clustering = {
   detectOutliers: _detectOutliers,
   centroidDrift: _centroidDrift,
   IncrementalClusterer: _IncrementalClusterer,
+  hdbscan: _hdbscan,
   cohesionScore: _cohesionScore,
   centroidCohesion: _centroidCohesion,
   silhouetteScore: _silhouetteScore,
