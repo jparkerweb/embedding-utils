@@ -30,7 +30,6 @@ Build semantic search, RAG pipelines, recommendation engines, duplicate detectio
   - [Storage](#storage)
   - [Model Management](#model-management)
   - [High-Level APIs](#high-level-apis)
-- [Migration Guide (v0.2 → v0.3)](#migration-guide-v02--v03)
 - [Caveats & Best Practices](#caveats--best-practices)
 - [API Reference (all exports)](#api-reference-all-exports)
 - [Common Patterns](#common-patterns)
@@ -1236,67 +1235,6 @@ console.log(results.map(r => r.id)); // => ['3', '1']
 
 ---
 
-## Migration Guide (v0.2 → v0.3)
-
-### Breaking Change Summary
-
-All vector-returning functions now return `Float32Array` instead of `number[]`. This reduces memory usage by ~50% and improves computation speed, but requires awareness of a few behavioral differences.
-
-### What Changed
-
-| Operation | v0.2 | v0.3 |
-|-----------|------|------|
-| `provider.embed(texts)` | `{ embeddings: number[][] }` | `{ embeddings: Float32Array[] }` |
-| `topK(query, corpus, k)` | `results[0].embedding: number[]` | `results[0].embedding: Float32Array` |
-| `normalize(v)` | `number[]` | `Float32Array` |
-| `clusterEmbeddings(...)` | `cluster.centroid: number[]` | `cluster.centroid: Float32Array` |
-| `deserialize(data, fmt)` | `number[][]` | `Float32Array[]` |
-
-### Common Migration Patterns
-
-```typescript
-// Converting Float32Array back to number[] (if needed for legacy code)
-const arr: number[] = [...float32Array];
-// or
-const arr: number[] = Array.from(float32Array);
-
-// JSON serialization (Float32Array serializes differently!)
-// v0.2: JSON.stringify([0.1, 0.2]) => '[0.1,0.2]'
-// v0.3: JSON.stringify(new Float32Array([0.1, 0.2])) => '{"0":0.1,"1":0.2}'
-// Fix: convert first
-JSON.stringify([...embedding]); // => '[0.1,0.2]'
-
-// Array.isArray check
-// v0.2: Array.isArray(embedding) => true
-// v0.3: Array.isArray(embedding) => false
-// Fix: use the new Vector type guard
-import { isVector } from 'embedding-utils';
-isVector(embedding); // => true for both number[] and Float32Array
-
-// Spread into arrays
-// v0.2: const combined = [...embA, ...embB]  => number[]
-// v0.3: const combined = [...embA, ...embB]  => number[] (spread converts Float32Array to number[])
-// This still works! Spread automatically converts.
-
-// .map() returns Float32Array, not Array
-// v0.2: embedding.map(x => x * 2) => number[]
-// v0.3: embedding.map(x => x * 2) => Float32Array  (because Float32Array.map returns Float32Array)
-// Usually fine, but if you need Array methods like .includes(), convert first:
-const arr = [...embedding].filter(x => x > 0);
-```
-
-### Input is NOT Breaking
-
-All functions now accept BOTH `number[]` and `Float32Array` as input. Your existing `number[]` inputs still work without any changes:
-
-```typescript
-// All functions accept BOTH number[] and Float32Array as input
-cosineSimilarity([1, 2, 3], [4, 5, 6]);              // still works
-cosineSimilarity(new Float32Array([1, 2, 3]), [4, 5, 6]); // also works
-```
-
----
-
 ## Caveats & Best Practices
 
 - **Embedding dimension consistency** -- Always use the same model and dimensions for embeddings you plan to compare. Mixing embeddings from different models produces meaningless similarity scores.
@@ -1535,111 +1473,6 @@ for await (const embedding of embeddingStream) {
 // avg is the running mean -- only 1 vector in memory at a time
 ```
 
-### Topic analysis pipeline (fast-topic-analysis pattern)
-
-Build a complete topic detection system: embed training phrases, cluster them, then compare incoming text against cluster centroids. This is the pattern used by [fast-topic-analysis](https://github.com/jparkerweb/fast-topic-analysis).
-
-```typescript
-import {
-  createLocalProvider,
-  clusterEmbeddings,
-  getPreset,
-  cosineSimilarity,
-  centroidCohesion,
-  assignToCluster,
-  batchIncrementalAverage,
-} from 'embedding-utils';
-
-const provider = createLocalProvider({
-  model: 'Xenova/all-MiniLM-L12-v2',
-  documentPrefix: '',          // set if your model needs it
-  queryPrefix: '',
-});
-
-// ── 1. Generate training embeddings per topic ──
-const topics = [
-  { name: 'cookies', phrases: ['chocolate chip cookies', 'baking cookies at home', ...], threshold: 0.4 },
-  { name: 'space',   phrases: ['NASA launches rocket', 'Mars exploration plans', ...],   threshold: 0.4 },
-];
-
-for (const topic of topics) {
-  const { embeddings } = await provider.embed(topic.phrases, { inputType: 'document' });
-
-  // ── 2. Cluster the embeddings ──
-  const clusters = clusterEmbeddings(embeddings, getPreset('balanced'));
-
-  // ── 3. Inspect cluster quality ──
-  for (const cluster of clusters) {
-    const quality = centroidCohesion(cluster);
-    console.log(`${topic.name}: ${cluster.size} phrases, cohesion ${quality.toFixed(3)}`);
-  }
-
-  // Store clusters (centroids + metadata) for runtime matching
-  topic.clusters = clusters;
-}
-
-// ── 4. Runtime: classify incoming text ──
-const { embeddings: [queryEmbed] } = await provider.embed('I love baking cookies', {
-  inputType: 'query',
-});
-
-for (const topic of topics) {
-  for (const cluster of topic.clusters) {
-    const similarity = cosineSimilarity(queryEmbed, cluster.centroid);
-    if (similarity >= topic.threshold) {
-      console.log(`Match: "${topic.name}" (similarity: ${similarity.toFixed(3)})`);
-    }
-  }
-}
-```
-
-### Incremental centroid updates
-
-When new training data arrives, update existing cluster centroids without re-processing all historical data. This is mathematically equivalent to re-computing from scratch.
-
-```typescript
-import { batchIncrementalAverage, assignToCluster } from 'embedding-utils';
-
-// New phrases arrive for the "cookies" topic
-const { embeddings: newEmbeddings } = await provider.embed(newPhrases, {
-  inputType: 'document',
-});
-
-for (const newEmbed of newEmbeddings) {
-  // Find the nearest cluster
-  const { clusterIndex, similarity } = assignToCluster(newEmbed, clusters);
-
-  if (clusterIndex >= 0) {
-    // Update the cluster centroid with weighted average
-    clusters[clusterIndex].centroid = batchIncrementalAverage(
-      clusters[clusterIndex].centroid,
-      [newEmbed],
-      clusters[clusterIndex].size,
-    );
-    clusters[clusterIndex].size++;
-    clusters[clusterIndex].members.push(newEmbed);
-  }
-}
-```
-
-### Migration from fast-topic-analysis
-
-If you're migrating from fast-topic-analysis's built-in functions to embedding-utils, here's how each function maps:
-
-| fast-topic-analysis | embedding-utils | Notes |
-|---------------------|-----------------|-------|
-| `generateEmbeddings(phrases)` | `provider.embed(phrases)` | Use `createLocalProvider()` with same model |
-| `cosineSimilarity(a, b)` | `cosineSimilarity(a, b)` | Identical signature and behavior |
-| `calculateAverageEmbedding(embeddings)` | `averageEmbeddings(embeddings)` | Same formula |
-| `weightedAverage(existing, count, newEmbeds)` | `batchIncrementalAverage(existing, newEmbeds, count)` | Note: `count` moves to 3rd param. Do **not** confuse with embedding-utils' own `weightedAverage(embeddings, weights)` which has a different signature. |
-| `combineTopicEmbeddings(existing, count, phrases)` | `batchIncrementalAverage(existing, newEmbeds, count)` | Generate embeddings separately first, then pass to `batchIncrementalAverage` |
-| `clusterEmbeddings(embeddings)` | `clusterEmbeddings(embeddings, config)` | Same algorithm, typed config. FTA's `phrasesWithEmbeddings` param is not needed — track labels separately. |
-| `clusteringConfig` presets | `getPreset('balanced')` | `'high-precision'`, `'balanced'`, `'performance'`, `'legacy'`. Note: threshold values differ slightly — FTA balanced=0.9, EU balanced=0.85. Adjust if you need exact FTA behavior. |
-| Cohesion calculation (inline in generate.js) | `centroidCohesion(cluster)` | Both compute avg similarity of members to centroid |
-| Disabled clustering (`enabled: false`) | `getPreset('legacy')` | Returns single cluster with all embeddings |
-| `prefixConfig.dataPrefix` | `LocalProviderConfig.documentPrefix` | Set in provider config |
-| `prefixConfig.queryPrefix` | `LocalProviderConfig.queryPrefix` | Set in provider config |
-
 ---
 
 ## TypeScript
@@ -1728,6 +1561,67 @@ try {
     console.error(`${error.provider} failed (HTTP ${error.status}): ${error.message}`);
   }
 }
+```
+
+---
+
+## Migration Guide (v0.2 → v0.3)
+
+### Breaking Change Summary
+
+All vector-returning functions now return `Float32Array` instead of `number[]`. This reduces memory usage by ~50% and improves computation speed, but requires awareness of a few behavioral differences.
+
+### What Changed
+
+| Operation | v0.2 | v0.3 |
+|-----------|------|------|
+| `provider.embed(texts)` | `{ embeddings: number[][] }` | `{ embeddings: Float32Array[] }` |
+| `topK(query, corpus, k)` | `results[0].embedding: number[]` | `results[0].embedding: Float32Array` |
+| `normalize(v)` | `number[]` | `Float32Array` |
+| `clusterEmbeddings(...)` | `cluster.centroid: number[]` | `cluster.centroid: Float32Array` |
+| `deserialize(data, fmt)` | `number[][]` | `Float32Array[]` |
+
+### Common Migration Patterns
+
+```typescript
+// Converting Float32Array back to number[] (if needed for legacy code)
+const arr: number[] = [...float32Array];
+// or
+const arr: number[] = Array.from(float32Array);
+
+// JSON serialization (Float32Array serializes differently!)
+// v0.2: JSON.stringify([0.1, 0.2]) => '[0.1,0.2]'
+// v0.3: JSON.stringify(new Float32Array([0.1, 0.2])) => '{"0":0.1,"1":0.2}'
+// Fix: convert first
+JSON.stringify([...embedding]); // => '[0.1,0.2]'
+
+// Array.isArray check
+// v0.2: Array.isArray(embedding) => true
+// v0.3: Array.isArray(embedding) => false
+// Fix: use the new Vector type guard
+import { isVector } from 'embedding-utils';
+isVector(embedding); // => true for both number[] and Float32Array
+
+// Spread into arrays
+// v0.2: const combined = [...embA, ...embB]  => number[]
+// v0.3: const combined = [...embA, ...embB]  => number[] (spread converts Float32Array to number[])
+// This still works! Spread automatically converts.
+
+// .map() returns Float32Array, not Array
+// v0.2: embedding.map(x => x * 2) => number[]
+// v0.3: embedding.map(x => x * 2) => Float32Array  (because Float32Array.map returns Float32Array)
+// Usually fine, but if you need Array methods like .includes(), convert first:
+const arr = [...embedding].filter(x => x > 0);
+```
+
+### Input is NOT Breaking
+
+All functions now accept BOTH `number[]` and `Float32Array` as input. Your existing `number[]` inputs still work without any changes:
+
+```typescript
+// All functions accept BOTH number[] and Float32Array as input
+cosineSimilarity([1, 2, 3], [4, 5, 6]);              // still works
+cosineSimilarity(new Float32Array([1, 2, 3]), [4, 5, 6]); // also works
 ```
 
 ---
