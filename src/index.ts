@@ -37,6 +37,11 @@ export type {
   HNSWSearchOptions,
   RandomProjector,
   QuantizationCalibration,
+  PipelineOptions,
+  PipelineProgressInfo,
+  EmbeddingPipeline,
+  CheckpointAdapter,
+  CheckpointState,
 } from './types';
 
 export {
@@ -141,6 +146,8 @@ export {
 } from './models/index';
 
 export { recallAtK, ndcg, mrr, meanAveragePrecision } from './eval/index';
+
+export { createEmbeddingPipeline, TokenBucketRateLimiter } from './pipeline/index';
 
 export { chunkByTokenCount, chunkBySentence, chunkByStructure } from './text/index';
 export { getTokenizerInfo } from './text/index';
@@ -264,4 +271,14 @@ export const Eval = {
   ndcg: _ndcg,
   mrr: _mrr,
   meanAveragePrecision: _meanAveragePrecision,
+} as const;
+
+import {
+  createEmbeddingPipeline as _createEmbeddingPipeline,
+  TokenBucketRateLimiter as _TokenBucketRateLimiter,
+} from './pipeline/index';
+
+export const Pipeline = {
+  createEmbeddingPipeline: _createEmbeddingPipeline,
+  TokenBucketRateLimiter: _TokenBucketRateLimiter,
 } as const;

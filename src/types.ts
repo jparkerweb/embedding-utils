@@ -759,6 +759,8 @@ export type { HDBSCANOptions, HDBSCANResult } from './clustering/hdbscan';
 export type { HNSWOptions, HNSWSearchOptions } from './search/hnsw';
 export type { RandomProjector } from './math/projection';
 export type { QuantizationCalibration } from './quantization/calibration';
+export type { PipelineOptions, PipelineProgressInfo, EmbeddingPipeline } from './pipeline/pipeline';
+export type { CheckpointAdapter, CheckpointState } from './pipeline/checkpoint';
 
 /**
  * A chunk produced by {@link chunkByStructure} with structural metadata.
