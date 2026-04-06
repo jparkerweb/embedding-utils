@@ -143,6 +143,10 @@ export type SimilarityMetric = 'cosine' | 'dot' | 'euclidean' | 'manhattan';
  * - `'mistral'` — Mistral AI (OpenAI-compatible wrapper)
  * - `'jina'` — Jina AI (OpenAI-compatible wrapper)
  * - `'openrouter'` — OpenRouter (OpenAI-compatible wrapper)
+ * - `'together'` — Together AI (OpenAI-compatible wrapper)
+ * - `'fireworks'` — Fireworks AI (OpenAI-compatible wrapper)
+ * - `'nomic'` — Nomic AI (OpenAI-compatible wrapper)
+ * - `'mixedbread'` — Mixedbread AI (OpenAI-compatible wrapper)
  */
 export type ProviderType =
   | 'local'
@@ -152,7 +156,11 @@ export type ProviderType =
   | 'voyage'
   | 'mistral'
   | 'jina'
-  | 'openrouter';
+  | 'openrouter'
+  | 'together'
+  | 'fireworks'
+  | 'nomic'
+  | 'mixedbread';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Interfaces
@@ -602,6 +610,10 @@ export interface ProviderConfigMap {
   mistral: OpenAICompatibleConfig;
   jina: OpenAICompatibleConfig;
   openrouter: OpenAICompatibleConfig;
+  together: OpenAICompatibleConfig;
+  fireworks: OpenAICompatibleConfig;
+  nomic: OpenAICompatibleConfig;
+  mixedbread: OpenAICompatibleConfig;
 }
 
 /**
@@ -706,3 +718,26 @@ export interface ModelInfo {
     query: string;
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Search Fusion Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * An item in a ranked list for use with {@link fuseRankedLists}.
+ */
+export interface RankedItem {
+  /** Unique identifier for this item. */
+  id: string;
+  /** Score from the original ranking source. */
+  score: number;
+}
+
+/**
+ * Supported score normalization methods for {@link normalizeScores}.
+ *
+ * - `'min-max'` — Scales scores to [0, 1] range
+ * - `'z-score'` — Standardizes to mean=0, std=1
+ * - `'sigmoid'` — Maps to (0, 1) via logistic function
+ */
+export type NormalizationMethod = 'min-max' | 'z-score' | 'sigmoid';

@@ -27,6 +27,8 @@ export type {
   SerializationMetadata,
   EmbeddingStoreConfig,
   TokenizerInfo,
+  RankedItem,
+  NormalizationMethod,
 } from './types';
 
 export {
@@ -78,13 +80,15 @@ export {
   rerankResults,
   mmrSearch,
   SearchIndex,
+  fuseRankedLists,
+  normalizeScores,
 } from './search/index';
 
 export { serialize, deserialize } from './storage/index';
 export type { DeserializeResult } from './storage/index';
 export { createLRUCache, warmCache } from './storage/index';
 
-export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings } from './quantization/index';
+export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings, hammingDistance, hammingSimilarity } from './quantization/index';
 
 export {
   clusterEmbeddings,
@@ -178,6 +182,8 @@ import {
   rerankResults as _rerankResults,
   mmrSearch as _mmrSearch,
   SearchIndex as _SearchIndex,
+  fuseRankedLists as _fuseRankedLists,
+  normalizeScores as _normalizeScores,
 } from './search/index';
 
 export const Search = {
@@ -189,6 +195,8 @@ export const Search = {
   rerankResults: _rerankResults,
   mmrSearch: _mmrSearch,
   SearchIndex: _SearchIndex,
+  fuseRankedLists: _fuseRankedLists,
+  normalizeScores: _normalizeScores,
 } as const;
 
 import {

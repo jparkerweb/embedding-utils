@@ -65,13 +65,24 @@ function truncateSingle(v: Vector, targetDims: number): Float32Array {
       `targetDims (${targetDims}) exceeds vector length (${v.length})`
     );
   }
+  let result: Float32Array;
   if (v instanceof Float32Array) {
-    if (targetDims === v.length) return v;
-    return v.slice(0, targetDims);
+    result = targetDims === v.length ? v.slice() : v.slice(0, targetDims);
+  } else {
+    result = new Float32Array(v.slice(0, targetDims));
   }
-  // number[] input
-  if (targetDims === v.length) return new Float32Array(v);
-  return new Float32Array(v.slice(0, targetDims));
+  // L2-normalize the truncated vector (Matryoshka best practice)
+  let mag = 0;
+  for (let i = 0; i < result.length; i++) {
+    mag += result[i] * result[i];
+  }
+  mag = Math.sqrt(mag);
+  if (mag > 0) {
+    for (let i = 0; i < result.length; i++) {
+      result[i] /= mag;
+    }
+  }
+  return result;
 }
 
 /**

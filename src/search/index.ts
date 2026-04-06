@@ -6,3 +6,4 @@ export { pairwiseSimilarity } from './pairwise';
 export { rerankResults } from './rerank';
 export { mmrSearch } from './mmr';
 export { SearchIndex } from './search-index';
+export { fuseRankedLists, normalizeScores } from './fusion';
