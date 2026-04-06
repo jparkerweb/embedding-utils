@@ -7,6 +7,7 @@
 
 import { ValidationError } from '../types';
 import type { Vector } from '../types';
+import { normalize } from './vector';
 
 /**
  * Truncates embedding(s) to a target number of dimensions (Matryoshka-style).
@@ -72,17 +73,7 @@ function truncateSingle(v: Vector, targetDims: number): Float32Array {
     result = new Float32Array(v.slice(0, targetDims));
   }
   // L2-normalize the truncated vector (Matryoshka best practice)
-  let mag = 0;
-  for (let i = 0; i < result.length; i++) {
-    mag += result[i] * result[i];
-  }
-  mag = Math.sqrt(mag);
-  if (mag > 0) {
-    for (let i = 0; i < result.length; i++) {
-      result[i] /= mag;
-    }
-  }
-  return result;
+  return normalize(result);
 }
 
 /**

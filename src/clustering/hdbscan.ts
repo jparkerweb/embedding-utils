@@ -2,6 +2,7 @@ import type { Vector, Cluster } from '../types';
 import { ValidationError } from '../types';
 import { toFloat32 } from '../internal/vector-utils';
 import { euclideanDistance, cosineDistance } from '../math/distance';
+import { cosineSimilarity } from '../math/similarity';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -428,18 +429,28 @@ function extractClusters(
   // A point belongs to the deepest selected cluster that contains it
   const selectedIds = [...clusterIds].filter((id) => selected.get(id));
 
+  // Precompute parent→children map to avoid O(k*m) rescans
+  const childrenByParent = new Map<number, CondensedTreeEntry[]>();
+  for (const entry of condensedTree) {
+    let children = childrenByParent.get(entry.parent);
+    if (!children) {
+      children = [];
+      childrenByParent.set(entry.parent, children);
+    }
+    children.push(entry);
+  }
+
   // For each selected cluster, collect all points in its subtree
   // (points that fell out of it + points in non-selected children)
   function collectAllPoints(clusterId: number): number[] {
     const points: number[] = [];
-    for (const entry of condensedTree) {
-      if (entry.parent === clusterId) {
-        if (entry.childSize === 1) {
-          points.push(entry.child);
-        } else {
-          // Sub-cluster — collect all its points recursively
-          points.push(...collectAllPoints(entry.child));
-        }
+    const children = childrenByParent.get(clusterId);
+    if (!children) return points;
+    for (const entry of children) {
+      if (entry.childSize === 1) {
+        points.push(entry.child);
+      } else {
+        points.push(...collectAllPoints(entry.child));
       }
     }
     return points;
@@ -447,17 +458,17 @@ function extractClusters(
 
   function collectSelectedPoints(clusterId: number): number[] {
     const points: number[] = [];
-    for (const entry of condensedTree) {
-      if (entry.parent === clusterId) {
-        if (entry.childSize === 1) {
-          points.push(entry.child);
-        } else if (selected.get(entry.child)) {
-          // Child is itself selected — don't claim its points
-          continue;
-        } else {
-          // Child not selected — its points belong to us
-          points.push(...collectAllPoints(entry.child));
-        }
+    const children = childrenByParent.get(clusterId);
+    if (!children) return points;
+    for (const entry of children) {
+      if (entry.childSize === 1) {
+        points.push(entry.child);
+      } else if (selected.get(entry.child)) {
+        // Child is itself selected — don't claim its points
+        continue;
+      } else {
+        // Child not selected — its points belong to us
+        points.push(...collectAllPoints(entry.child));
       }
     }
     return points;
@@ -569,14 +580,7 @@ export function hdbscan(embeddings: Vector[], options: HDBSCANOptions = {}): HDB
       let pairs = 0;
       for (let i = 0; i < memberVecs.length; i++) {
         for (let j = i + 1; j < memberVecs.length; j++) {
-          let dot = 0, magA = 0, magB = 0;
-          for (let d = 0; d < dim; d++) {
-            dot += memberVecs[i][d] * memberVecs[j][d];
-            magA += memberVecs[i][d] * memberVecs[i][d];
-            magB += memberVecs[j][d] * memberVecs[j][d];
-          }
-          const denom = Math.sqrt(magA) * Math.sqrt(magB);
-          totalSim += denom === 0 ? 0 : dot / denom;
+          totalSim += cosineSimilarity(memberVecs[i], memberVecs[j]);
           pairs++;
         }
       }

@@ -30,17 +30,14 @@ function parseBlocks(text: string): Block[] {
   const blocks: Block[] = [];
   let i = 0;
 
-  /** Current character offset tracking. */
-  let charOffset = 0;
-
-  function advanceOffset(lineIndex: number): number {
-    // Offset is the sum of all previous line lengths + newline chars
-    let offset = 0;
-    for (let j = 0; j < lineIndex; j++) {
-      offset += lines[j].length + 1; // +1 for newline
-    }
-    return offset;
+  // Precompute character offsets for each line (avoids O(n²) recalculation)
+  const lineOffsets = new Array<number>(lines.length);
+  lineOffsets[0] = 0;
+  for (let k = 1; k < lines.length; k++) {
+    lineOffsets[k] = lineOffsets[k - 1] + lines[k - 1].length + 1; // +1 for newline
   }
+
+  let charOffset = 0;
 
   while (i < lines.length) {
     const line = lines[i];
@@ -52,7 +49,7 @@ function parseBlocks(text: string): Block[] {
       continue;
     }
 
-    charOffset = advanceOffset(i);
+    charOffset = lineOffsets[i];
 
     // Heading
     const headingMatch = trimmed.match(HEADING_RE);

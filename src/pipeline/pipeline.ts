@@ -172,11 +172,7 @@ export function createEmbeddingPipeline(
 
           // Save checkpoint at interval
           if (checkpoint && completedIds && completedBatches % checkpointInterval === 0) {
-            await checkpoint.save({
-              completedIds: [...completedIds],
-              totalProcessed,
-              timestamp: Date.now(),
-            });
+            await saveCheckpoint(checkpoint, completedIds, totalProcessed);
           }
 
           // Progress callback
@@ -200,16 +196,24 @@ export function createEmbeddingPipeline(
 
       // Final checkpoint save
       if (checkpoint && completedIds) {
-        await checkpoint.save({
-          completedIds: [...completedIds],
-          totalProcessed,
-          timestamp: Date.now(),
-        });
+        await saveCheckpoint(checkpoint, completedIds, totalProcessed);
       }
 
       return results;
     },
   };
+}
+
+async function saveCheckpoint(
+  checkpoint: CheckpointAdapter,
+  completedIds: Set<string>,
+  totalProcessed: number,
+): Promise<void> {
+  await checkpoint.save({
+    completedIds: [...completedIds],
+    totalProcessed,
+    timestamp: Date.now(),
+  });
 }
 
 /** Synchronous batch slicing helper (no async overhead). */
