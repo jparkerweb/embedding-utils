@@ -756,6 +756,7 @@ export type StructuredChunkType = 'paragraph' | 'code' | 'list' | 'table' | 'hea
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type { HDBSCANOptions, HDBSCANResult } from './clustering/hdbscan';
+export type { HNSWOptions, HNSWSearchOptions } from './search/hnsw';
 
 /**
  * A chunk produced by {@link chunkByStructure} with structural metadata.

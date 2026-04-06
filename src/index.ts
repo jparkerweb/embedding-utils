@@ -33,6 +33,8 @@ export type {
   StructuredChunkType,
   HDBSCANOptions,
   HDBSCANResult,
+  HNSWOptions,
+  HNSWSearchOptions,
 } from './types';
 
 export {
@@ -86,6 +88,7 @@ export {
   SearchIndex,
   fuseRankedLists,
   normalizeScores,
+  HNSWIndex,
 } from './search/index';
 
 export { serialize, deserialize } from './storage/index';
@@ -189,6 +192,7 @@ import {
   SearchIndex as _SearchIndex,
   fuseRankedLists as _fuseRankedLists,
   normalizeScores as _normalizeScores,
+  HNSWIndex as _HNSWIndex,
 } from './search/index';
 
 export const Search = {
@@ -202,6 +206,7 @@ export const Search = {
   SearchIndex: _SearchIndex,
   fuseRankedLists: _fuseRankedLists,
   normalizeScores: _normalizeScores,
+  HNSWIndex: _HNSWIndex,
 } as const;
 
 import {
