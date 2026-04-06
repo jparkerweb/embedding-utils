@@ -741,3 +741,32 @@ export interface RankedItem {
  * - `'sigmoid'` — Maps to (0, 1) via logistic function
  */
 export type NormalizationMethod = 'min-max' | 'z-score' | 'sigmoid';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Text / Markdown Chunking Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Block type classification for markdown-aware chunking.
+ */
+export type StructuredChunkType = 'paragraph' | 'code' | 'list' | 'table' | 'heading';
+
+/**
+ * A chunk produced by {@link chunkByStructure} with structural metadata.
+ *
+ * Each chunk preserves its position in the document, the heading hierarchy
+ * it falls under, and the type of markdown structure it represents.
+ */
+export interface StructuredChunk {
+  /** The chunk text content. */
+  text: string;
+  /** Metadata describing the chunk's position and structure. */
+  metadata: {
+    /** Heading hierarchy this chunk falls under (e.g., ['Intro', 'Setup']). */
+    headings: string[];
+    /** Character offset of this chunk in the original input text. */
+    offset: number;
+    /** The type of markdown structure this chunk represents. */
+    type: StructuredChunkType;
+  };
+}

@@ -29,6 +29,8 @@ export type {
   TokenizerInfo,
   RankedItem,
   NormalizationMethod,
+  StructuredChunk,
+  StructuredChunkType,
 } from './types';
 
 export {
@@ -129,7 +131,7 @@ export {
   getRecommendedModel,
 } from './models/index';
 
-export { chunkByTokenCount, chunkBySentence } from './text/index';
+export { chunkByTokenCount, chunkBySentence, chunkByStructure } from './text/index';
 export { getTokenizerInfo } from './text/index';
 export { createEmbeddingStore } from './store/index';
 export type { EmbeddingStore } from './store/embedding-store';
