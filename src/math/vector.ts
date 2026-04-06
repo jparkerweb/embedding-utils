@@ -7,10 +7,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { ValidationError } from '../types';
+import type { Vector } from '../types';
 import { validateVectorPair } from '../internal/validation';
 
 /** @internal */
-function validateVector(v: number[]): void {
+function validateVector(v: Vector): void {
   if (v.length === 0) {
     throw new ValidationError('Vector must be non-empty');
   }
@@ -36,7 +37,7 @@ function validateVector(v: number[]): void {
  * magnitude([0, 0, 0]);    // 0  (zero vector)
  * magnitude([0.6, 0.8]);   // 1  (already normalized)
  */
-export function magnitude(v: number[]): number {
+export function magnitude(v: Vector): number {
   validateVector(v);
   let sum = 0;
   for (let i = 0; i < v.length; i++) {
@@ -69,11 +70,11 @@ export function magnitude(v: number[]): number {
  * normalize([3, 4]);    // [0.6, 0.8]  (magnitude = 1.0)
  * normalize([0, 0]);    // [0, 0]       (zero vector stays zero)
  */
-export function normalize(v: number[]): number[] {
+export function normalize(v: Vector): Float32Array {
   validateVector(v);
   const mag = magnitude(v);
-  if (mag === 0) return new Array(v.length).fill(0);
-  const result = new Array<number>(v.length);
+  if (mag === 0) return new Float32Array(v.length);
+  const result = new Float32Array(v.length);
   for (let i = 0; i < v.length; i++) {
     result[i] = v[i] / mag;
   }
@@ -97,9 +98,9 @@ export function normalize(v: number[]): number[] {
  * @example
  * add([1, 2], [3, 4]); // [4, 6]
  */
-export function add(a: number[], b: number[]): number[] {
+export function add(a: Vector, b: Vector): Float32Array {
   validateVectorPair(a, b);
-  const result = new Array<number>(a.length);
+  const result = new Float32Array(a.length);
   for (let i = 0; i < a.length; i++) {
     result[i] = a[i] + b[i];
   }
@@ -123,9 +124,9 @@ export function add(a: number[], b: number[]): number[] {
  * @example
  * subtract([5, 3], [1, 2]); // [4, 1]
  */
-export function subtract(a: number[], b: number[]): number[] {
+export function subtract(a: Vector, b: Vector): Float32Array {
   validateVectorPair(a, b);
-  const result = new Array<number>(a.length);
+  const result = new Float32Array(a.length);
   for (let i = 0; i < a.length; i++) {
     result[i] = a[i] - b[i];
   }
@@ -151,9 +152,9 @@ export function subtract(a: number[], b: number[]): number[] {
  * scale([1, 2, 3], -1);   // [-1, -2, -3]  (inverts direction)
  * scale([1, 2, 3], 0.5);  // [0.5, 1, 1.5]
  */
-export function scale(v: number[], scalar: number): number[] {
+export function scale(v: Vector, scalar: number): Float32Array {
   validateVector(v);
-  const result = new Array<number>(v.length);
+  const result = new Float32Array(v.length);
   for (let i = 0; i < v.length; i++) {
     result[i] = v[i] * scalar;
   }
@@ -172,7 +173,7 @@ export function scale(v: number[], scalar: number): number[] {
  * isNormalized([0.6, 0.8]);   // true  (magnitude = 1.0)
  * isNormalized([1, 1, 1]);    // false (magnitude ≈ 1.73)
  */
-export function isNormalized(vector: number[], tolerance = 1e-6): boolean {
+export function isNormalized(vector: Vector, tolerance = 1e-6): boolean {
   validateVector(vector);
   let sum = 0;
   for (let i = 0; i < vector.length; i++) {

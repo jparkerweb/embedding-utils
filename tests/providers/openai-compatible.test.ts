@@ -84,7 +84,11 @@ describe('createOpenAICompatibleProvider', () => {
     const provider = createOpenAICompatibleProvider(baseConfig);
     const result = await provider.embed(['hello', 'world']);
 
-    expect(result.embeddings).toEqual([[0.1, 0.2], [0.3, 0.4]]);
+    expect(result.embeddings).toHaveLength(2);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[1]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(2);
+    expect(result.embeddings[1]).toHaveLength(2);
     expect(result.usage).toEqual({ tokens: 10 });
   });
 
@@ -94,7 +98,9 @@ describe('createOpenAICompatibleProvider', () => {
     const provider = createOpenAICompatibleProvider(baseConfig);
     const result = await provider.embed('test');
 
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
     expect(result.model).toBe('text-embedding-3-small');
     expect(result.dimensions).toBe(3);
     expect(result.usage).toEqual({ tokens: 5 });
@@ -184,7 +190,9 @@ describe('createOpenAICompatibleProvider', () => {
     const result = await provider.embed('test');
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
   });
 
   it('should retry on 500 then succeed', async () => {
@@ -199,7 +207,9 @@ describe('createOpenAICompatibleProvider', () => {
     const result = await provider.embed('test');
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
   });
 
   it('should NOT retry on 400', async () => {

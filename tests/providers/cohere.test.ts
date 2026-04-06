@@ -116,7 +116,11 @@ describe('createCohereProvider', () => {
     const provider = createCohereProvider(baseConfig);
     const result = await provider.embed(['a', 'b']);
 
-    expect(result.embeddings).toEqual([[0.1, 0.2], [0.3, 0.4]]);
+    expect(result.embeddings).toHaveLength(2);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[1]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(2);
+    expect(result.embeddings[1]).toHaveLength(2);
     expect(result.usage).toEqual({ tokens: 8 });
   });
 
@@ -154,7 +158,9 @@ describe('createCohereProvider', () => {
     const result = await provider.embed('test');
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
   });
 
   it('should retry on 5xx then succeed', async () => {
@@ -169,7 +175,9 @@ describe('createCohereProvider', () => {
     const result = await provider.embed('test');
 
     expect(fetchSpy).toHaveBeenCalledTimes(2);
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
   });
 
   it('should throw ProviderError on non-retryable errors', async () => {

@@ -1,4 +1,4 @@
-import type { SimilarityMetric } from '../types';
+import type { SimilarityMetric, Vector } from '../types';
 import { clusterEmbeddings } from './cluster';
 import { computeDistance } from '../internal/metrics';
 import { computeCentroid } from '../internal/clustering';
@@ -14,7 +14,7 @@ interface OptimalKOptions {
  * Computes the mean silhouette coefficient for a given set of cluster assignments.
  */
 function meanSilhouette(
-  embeddings: number[][],
+  embeddings: Vector[],
   assignments: number[],
   k: number,
   metric: SimilarityMetric,
@@ -68,13 +68,13 @@ function meanSilhouette(
  * Computes within-cluster sum of distances (WCSD) for elbow method.
  */
 function withinClusterSumOfDistances(
-  embeddings: number[][],
+  embeddings: Vector[],
   assignments: number[],
   k: number,
   metric: SimilarityMetric,
 ): number {
   // Compute centroid for each cluster
-  const clusterMembers: number[][][] = Array.from({ length: k }, () => []);
+  const clusterMembers: Vector[][] = Array.from({ length: k }, () => []);
   for (let i = 0; i < embeddings.length; i++) {
     clusterMembers[assignments[i]].push(embeddings[i]);
   }
@@ -94,25 +94,28 @@ function withinClusterSumOfDistances(
  * Runs clustering for a given k and returns flat assignment array.
  */
 function clusterAndAssign(
-  embeddings: number[][],
+  embeddings: Vector[],
   k: number,
   metric: SimilarityMetric,
 ): number[] {
+  // Use labels to track original indices through clustering
+  const indexLabels = embeddings.map((_, i) => String(i));
   const clusters = clusterEmbeddings(embeddings, {
     maxClusters: k,
     minClusterSize: 1,
     similarityThreshold: 0,
     metric,
-  });
+  }, indexLabels);
 
-  // Build assignment map: for each original embedding, find which cluster it ended up in
+  // Build assignment map using labels (original indices)
   const assignments = new Array<number>(embeddings.length).fill(0);
   for (let ci = 0; ci < clusters.length; ci++) {
-    for (const member of clusters[ci].members) {
-      // Find original index by reference equality
-      const idx = embeddings.indexOf(member);
-      if (idx >= 0) {
-        assignments[idx] = ci;
+    if (clusters[ci].labels) {
+      for (const label of clusters[ci].labels!) {
+        const idx = parseInt(label, 10);
+        if (idx >= 0 && idx < embeddings.length) {
+          assignments[idx] = ci;
+        }
       }
     }
   }
@@ -131,7 +134,7 @@ function clusterAndAssign(
  * @returns The optimal k value
  */
 export function findOptimalK(
-  embeddings: number[][],
+  embeddings: Vector[],
   options?: OptimalKOptions,
 ): number {
   const method = options?.method ?? 'silhouette';
@@ -192,7 +195,7 @@ export function findOptimalK(
  * @returns Array of { k, silhouette } sorted by k ascending
  */
 export function silhouetteByK(
-  embeddings: number[][],
+  embeddings: Vector[],
   options?: Omit<OptimalKOptions, 'method'>,
 ): Array<{ k: number; silhouette: number }> {
   const metric = options?.metric ?? 'cosine';

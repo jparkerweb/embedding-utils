@@ -102,6 +102,19 @@ export class ModelNotFoundError extends EmbeddingUtilsError {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * A vector of numeric values, accepted by all embedding-utils functions.
+ *
+ * Functions that **accept** vectors take `Vector` (both `number[]` and
+ * `Float32Array` are valid inputs). Functions that **return** vectors
+ * always return `Float32Array` for memory efficiency and type safety.
+ *
+ * **Migration from v0.2:** If your code destructures or spreads returned
+ * vectors, note that `[...float32Array]` produces `number[]` and
+ * `JSON.stringify(float32Array)` produces `{"0": val, ...}` not `[val, ...]`.
+ */
+export type Vector = number[] | Float32Array;
+
+/**
  * Supported similarity / distance metrics used across search, clustering,
  * and aggregation functions.
  *
@@ -130,6 +143,10 @@ export type SimilarityMetric = 'cosine' | 'dot' | 'euclidean' | 'manhattan';
  * - `'mistral'` — Mistral AI (OpenAI-compatible wrapper)
  * - `'jina'` — Jina AI (OpenAI-compatible wrapper)
  * - `'openrouter'` — OpenRouter (OpenAI-compatible wrapper)
+ * - `'together'` — Together AI (OpenAI-compatible wrapper)
+ * - `'fireworks'` — Fireworks AI (OpenAI-compatible wrapper)
+ * - `'nomic'` — Nomic AI (OpenAI-compatible wrapper)
+ * - `'mixedbread'` — Mixedbread AI (OpenAI-compatible wrapper)
  */
 export type ProviderType =
   | 'local'
@@ -139,7 +156,11 @@ export type ProviderType =
   | 'voyage'
   | 'mistral'
   | 'jina'
-  | 'openrouter';
+  | 'openrouter'
+  | 'together'
+  | 'fireworks'
+  | 'nomic'
+  | 'mixedbread';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Interfaces
@@ -189,8 +210,8 @@ export interface EmbedOptions {
  * model, dimensions, and token usage.
  */
 export interface EmbeddingResult {
-  /** Array of embedding vectors. Each inner array has `dimensions` elements. */
-  embeddings: number[][];
+  /** Array of embedding vectors. Each vector is a Float32Array with `dimensions` elements. */
+  embeddings: Float32Array[];
   /** Model identifier that was used for generation (e.g., 'text-embedding-3-small'). */
   model: string;
   /** Number of dimensions in each embedding vector. */
@@ -240,7 +261,7 @@ export interface SearchResult {
   /** Similarity score computed using the specified metric. Higher = more similar. */
   score: number;
   /** The matched embedding vector. */
-  embedding: number[];
+  embedding: Float32Array;
   /** Optional label from the `labels` array passed to the search function. */
   label?: string;
 }
@@ -271,9 +292,9 @@ export interface SearchOptions {
  */
 export interface Cluster {
   /** Mean vector of all cluster members. Updated after every assignment or merge. */
-  centroid: number[];
+  centroid: Float32Array;
   /** All embedding vectors belonging to this cluster. */
-  members: number[][];
+  members: Float32Array[];
   /** Optional labels corresponding to each member (preserves order). */
   labels?: string[];
   /** Number of members in this cluster (always equals `members.length`). */
@@ -442,9 +463,9 @@ export interface CacheStats {
  */
 export interface CacheProvider {
   /** Retrieve cached embeddings by key. Returns undefined on cache miss or expiration. */
-  get(key: string): Promise<number[][] | undefined>;
+  get(key: string): Promise<Float32Array[] | undefined>;
   /** Store embeddings under a key. Evicts the oldest entry if the cache is full. */
-  set(key: string, value: number[][]): Promise<void>;
+  set(key: string, value: Float32Array[]): Promise<void>;
   /** Check if a key exists and has not expired. */
   has(key: string): Promise<boolean>;
   /** Remove a specific entry from the cache. */
@@ -589,6 +610,10 @@ export interface ProviderConfigMap {
   mistral: OpenAICompatibleConfig;
   jina: OpenAICompatibleConfig;
   openrouter: OpenAICompatibleConfig;
+  together: OpenAICompatibleConfig;
+  fireworks: OpenAICompatibleConfig;
+  nomic: OpenAICompatibleConfig;
+  mixedbread: OpenAICompatibleConfig;
 }
 
 /**
@@ -621,7 +646,7 @@ export interface StoredItem {
   /** Unique identifier for this item. */
   id: string;
   /** The embedding vector. */
-  embedding: number[];
+  embedding: Float32Array;
   /** Optional metadata associated with this item. */
   metadata?: Record<string, unknown>;
 }
@@ -691,5 +716,68 @@ export interface ModelInfo {
     document: string;
     /** Prefix for query/search inputs. */
     query: string;
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Search Fusion Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * An item in a ranked list for use with {@link fuseRankedLists}.
+ */
+export interface RankedItem {
+  /** Unique identifier for this item. */
+  id: string;
+  /** Score from the original ranking source. */
+  score: number;
+}
+
+/**
+ * Supported score normalization methods for {@link normalizeScores}.
+ *
+ * - `'min-max'` — Scales scores to [0, 1] range
+ * - `'z-score'` — Standardizes to mean=0, std=1
+ * - `'sigmoid'` — Maps to (0, 1) via logistic function
+ */
+export type NormalizationMethod = 'min-max' | 'z-score' | 'sigmoid';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Text / Markdown Chunking Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Block type classification for markdown-aware chunking.
+ */
+export type StructuredChunkType = 'paragraph' | 'code' | 'list' | 'table' | 'heading';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HDBSCAN Clustering Types (re-exported from clustering/hdbscan.ts)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type { HDBSCANOptions, HDBSCANResult } from './clustering/hdbscan';
+export type { HNSWOptions, HNSWSearchOptions } from './search/hnsw';
+export type { RandomProjector } from './math/projection';
+export type { QuantizationCalibration } from './quantization/calibration';
+export type { PipelineOptions, PipelineProgressInfo, EmbeddingPipeline } from './pipeline/pipeline';
+export type { CheckpointAdapter, CheckpointState } from './pipeline/checkpoint';
+
+/**
+ * A chunk produced by {@link chunkByStructure} with structural metadata.
+ *
+ * Each chunk preserves its position in the document, the heading hierarchy
+ * it falls under, and the type of markdown structure it represents.
+ */
+export interface StructuredChunk {
+  /** The chunk text content. */
+  text: string;
+  /** Metadata describing the chunk's position and structure. */
+  metadata: {
+    /** Heading hierarchy this chunk falls under (e.g., ['Intro', 'Setup']). */
+    headings: string[];
+    /** Character offset of this chunk in the original input text. */
+    offset: number;
+    /** The type of markdown structure this chunk represents. */
+    type: StructuredChunkType;
   };
 }

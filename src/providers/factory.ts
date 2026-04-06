@@ -15,6 +15,10 @@ const ALIAS_BASE_URLS: Record<string, string> = {
   mistral: 'https://api.mistral.ai/v1',
   jina: 'https://api.jina.ai/v1',
   openrouter: 'https://openrouter.ai/api/v1',
+  together: 'https://api.together.xyz/v1',
+  fireworks: 'https://api.fireworks.ai/inference/v1',
+  nomic: 'https://api-atlas.nomic.ai/v1',
+  mixedbread: 'https://api.mixedbread.ai/v1',
 };
 
 /**
@@ -47,6 +51,10 @@ export function createProvider<T extends ProviderType>(
     case 'mistral':
     case 'jina':
     case 'openrouter':
+    case 'together':
+    case 'fireworks':
+    case 'nomic':
+    case 'mixedbread':
       return createOpenAICompatibleProvider({
         ...(config as OpenAICompatibleConfig),
         baseUrl: ALIAS_BASE_URLS[type],

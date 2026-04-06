@@ -33,7 +33,9 @@ describe('createLocalProvider', () => {
 
     const result = await provider.embed('hello');
 
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
     expect(result.dimensions).toBe(3);
     expect(result.model).toBe('Xenova/all-MiniLM-L12-v2');
     expect(mockPipeline).toHaveBeenCalledWith(
@@ -54,10 +56,11 @@ describe('createLocalProvider', () => {
 
     const result = await provider.embed(['hello', 'world']);
 
-    expect(result.embeddings).toEqual([
-      [0.1, 0.2],
-      [0.3, 0.4],
-    ]);
+    expect(result.embeddings).toHaveLength(2);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[1]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(2);
+    expect(result.embeddings[1]).toHaveLength(2);
     expect(result.dimensions).toBe(2);
   });
 
@@ -124,7 +127,7 @@ describe('createLocalProvider', () => {
     expect(result).toHaveProperty('embeddings');
     expect(result).toHaveProperty('model');
     expect(result).toHaveProperty('dimensions');
-    expect(Array.isArray(result.embeddings)).toBe(true);
+    expect(result.embeddings).toBeInstanceOf(Array);
     expect(typeof result.model).toBe('string');
     expect(typeof result.dimensions).toBe('number');
   });
@@ -137,7 +140,9 @@ describe('createLocalProvider', () => {
 
     const result = await provider.embed('test', { dimensions: 3 });
 
-    expect(result.embeddings).toEqual([[0.1, 0.2, 0.3]]);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    expect(result.embeddings[0]).toHaveLength(3);
     expect(result.dimensions).toBe(3);
   });
 

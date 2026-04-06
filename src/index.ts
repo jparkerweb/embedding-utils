@@ -1,4 +1,5 @@
 export type {
+  Vector,
   EmbeddingProvider,
   EmbedOptions,
   EmbeddingResult,
@@ -26,6 +27,21 @@ export type {
   SerializationMetadata,
   EmbeddingStoreConfig,
   TokenizerInfo,
+  RankedItem,
+  NormalizationMethod,
+  StructuredChunk,
+  StructuredChunkType,
+  HDBSCANOptions,
+  HDBSCANResult,
+  HNSWOptions,
+  HNSWSearchOptions,
+  RandomProjector,
+  QuantizationCalibration,
+  PipelineOptions,
+  PipelineProgressInfo,
+  EmbeddingPipeline,
+  CheckpointAdapter,
+  CheckpointState,
 } from './types';
 
 export {
@@ -36,6 +52,8 @@ export {
   ProviderError,
   ModelNotFoundError,
 } from './types';
+
+export { toFloat32, isVector } from './internal/vector-utils';
 
 export {
   cosineSimilarity,
@@ -51,6 +69,7 @@ export {
   isNormalized,
   truncateDimensions,
   validateDimensions,
+  createRandomProjection,
 } from './math/index';
 
 export {
@@ -75,13 +94,16 @@ export {
   rerankResults,
   mmrSearch,
   SearchIndex,
+  fuseRankedLists,
+  normalizeScores,
+  HNSWIndex,
 } from './search/index';
 
 export { serialize, deserialize } from './storage/index';
 export type { DeserializeResult } from './storage/index';
 export { createLRUCache, warmCache } from './storage/index';
 
-export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings } from './quantization/index';
+export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings, hammingDistance, hammingSimilarity, calibrate, calibratedQuantize, calibratedDequantize } from './quantization/index';
 
 export {
   clusterEmbeddings,
@@ -98,6 +120,7 @@ export {
   detectOutliers,
   centroidDrift,
   IncrementalClusterer,
+  hdbscan,
 } from './clustering/index';
 
 export {
@@ -122,7 +145,11 @@ export {
   getRecommendedModel,
 } from './models/index';
 
-export { chunkByTokenCount, chunkBySentence } from './text/index';
+export { recallAtK, ndcg, mrr, meanAveragePrecision } from './eval/index';
+
+export { createEmbeddingPipeline, TokenBucketRateLimiter } from './pipeline/index';
+
+export { chunkByTokenCount, chunkBySentence, chunkByStructure } from './text/index';
 export { getTokenizerInfo } from './text/index';
 export { createEmbeddingStore } from './store/index';
 export type { EmbeddingStore } from './store/embedding-store';
@@ -148,6 +175,7 @@ import {
   isNormalized as _isNormalized,
   truncateDimensions as _truncateDimensions,
   validateDimensions as _validateDimensions,
+  createRandomProjection as _createRandomProjection,
 } from './math/index';
 
 export const Math = {
@@ -164,6 +192,7 @@ export const Math = {
   isNormalized: _isNormalized,
   truncateDimensions: _truncateDimensions,
   validateDimensions: _validateDimensions,
+  createRandomProjection: _createRandomProjection,
 } as const;
 
 import {
@@ -175,6 +204,9 @@ import {
   rerankResults as _rerankResults,
   mmrSearch as _mmrSearch,
   SearchIndex as _SearchIndex,
+  fuseRankedLists as _fuseRankedLists,
+  normalizeScores as _normalizeScores,
+  HNSWIndex as _HNSWIndex,
 } from './search/index';
 
 export const Search = {
@@ -186,6 +218,9 @@ export const Search = {
   rerankResults: _rerankResults,
   mmrSearch: _mmrSearch,
   SearchIndex: _SearchIndex,
+  fuseRankedLists: _fuseRankedLists,
+  normalizeScores: _normalizeScores,
+  HNSWIndex: _HNSWIndex,
 } as const;
 
 import {
@@ -196,6 +231,7 @@ import {
   detectOutliers as _detectOutliers,
   centroidDrift as _centroidDrift,
   IncrementalClusterer as _IncrementalClusterer,
+  hdbscan as _hdbscan,
   cohesionScore as _cohesionScore,
   centroidCohesion as _centroidCohesion,
   silhouetteScore as _silhouetteScore,
@@ -213,6 +249,7 @@ export const Clustering = {
   detectOutliers: _detectOutliers,
   centroidDrift: _centroidDrift,
   IncrementalClusterer: _IncrementalClusterer,
+  hdbscan: _hdbscan,
   cohesionScore: _cohesionScore,
   centroidCohesion: _centroidCohesion,
   silhouetteScore: _silhouetteScore,
@@ -220,4 +257,28 @@ export const Clustering = {
   mergeClusters: _mergeClusters,
   CLUSTERING_PRESETS: _CLUSTERING_PRESETS,
   getPreset: _getPreset,
+} as const;
+
+import {
+  recallAtK as _recallAtK,
+  ndcg as _ndcg,
+  mrr as _mrr,
+  meanAveragePrecision as _meanAveragePrecision,
+} from './eval/index';
+
+export const Eval = {
+  recallAtK: _recallAtK,
+  ndcg: _ndcg,
+  mrr: _mrr,
+  meanAveragePrecision: _meanAveragePrecision,
+} as const;
+
+import {
+  createEmbeddingPipeline as _createEmbeddingPipeline,
+  TokenBucketRateLimiter as _TokenBucketRateLimiter,
+} from './pipeline/index';
+
+export const Pipeline = {
+  createEmbeddingPipeline: _createEmbeddingPipeline,
+  TokenBucketRateLimiter: _TokenBucketRateLimiter,
 } as const;

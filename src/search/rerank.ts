@@ -1,11 +1,8 @@
 import { computeScore } from '../internal/metrics';
-import type { SimilarityMetric } from '../types';
+import type { SimilarityMetric, Vector } from '../types';
 
 /**
  * Re-ranks search results by combining original scores with recomputed similarity.
- *
- * Useful for two-stage retrieval: first retrieve candidates with a fast method,
- * then re-rank with a more precise metric or different weighting.
  *
  * @param results - Array of search results with index, score, and embedding
  * @param query - The query embedding to re-score against
@@ -13,8 +10,8 @@ import type { SimilarityMetric } from '../types';
  * @returns Re-ranked results sorted by combined score descending
  */
 export function rerankResults(
-  results: Array<{ index: number; score: number; embedding: number[] }>,
-  query: number[],
+  results: Array<{ index: number; score: number; embedding: Vector }>,
+  query: Vector,
   options?: {
     metric?: SimilarityMetric;
     weights?: { original?: number; rerank?: number };

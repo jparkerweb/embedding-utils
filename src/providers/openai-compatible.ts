@@ -5,6 +5,7 @@ import type {
   OpenAICompatibleConfig,
 } from '../types';
 import { ProviderError, ValidationError } from '../types';
+import { toFloat32 } from '../internal/vector-utils';
 import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
 import type { OpenAIEmbeddingResponse } from './types';
 
@@ -138,7 +139,7 @@ export function createOpenAICompatibleProvider(
         }
 
         return {
-          embeddings: allEmbeddings,
+          embeddings: allEmbeddings.map(toFloat32),
           model: config.model,
           dimensions: allEmbeddings[0]?.length ?? 0,
           usage: { tokens: totalTokens },

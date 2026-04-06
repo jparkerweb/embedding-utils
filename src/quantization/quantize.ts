@@ -1,4 +1,5 @@
 import { ValidationError } from '../types';
+import type { Vector } from '../types';
 
 type QuantizationType = 'fp16' | 'int8' | 'uint8' | 'binary';
 
@@ -78,12 +79,12 @@ function float32ToFloat16(value: number): number {
  * @example
  * quantize([0.5, -0.3, 0.8], 'int8'); // Int8Array [64, -38, 102]
  */
-export function quantize(embedding: number[], type: 'fp16'): Float32Array;
-export function quantize(embedding: number[], type: 'int8'): Int8Array;
-export function quantize(embedding: number[], type: 'uint8'): Uint8Array;
-export function quantize(embedding: number[], type: 'binary'): Uint8Array;
+export function quantize(embedding: Vector, type: 'fp16'): Float32Array;
+export function quantize(embedding: Vector, type: 'int8'): Int8Array;
+export function quantize(embedding: Vector, type: 'uint8'): Uint8Array;
+export function quantize(embedding: Vector, type: 'binary'): Uint8Array;
 export function quantize(
-  embedding: number[],
+  embedding: Vector,
   type: QuantizationType,
 ): Float32Array | Int8Array | Uint8Array {
   switch (type) {
@@ -137,26 +138,23 @@ export function quantize(
  * @example
  * dequantize(new Int8Array([64, -38, 102]), 'int8'); // [0.504, -0.299, 0.803]
  */
-export function dequantize(data: Float32Array, type: 'fp16', originalDimension?: number): number[];
-export function dequantize(data: Int8Array, type: 'int8', originalDimension?: number): number[];
-export function dequantize(data: Uint8Array, type: 'uint8', originalDimension?: number): number[];
-export function dequantize(data: Uint8Array, type: 'binary', originalDimension?: number): number[];
+export function dequantize(data: Float32Array, type: 'fp16', originalDimension?: number): Float32Array;
+export function dequantize(data: Int8Array, type: 'int8', originalDimension?: number): Float32Array;
+export function dequantize(data: Uint8Array, type: 'uint8', originalDimension?: number): Float32Array;
+export function dequantize(data: Uint8Array, type: 'binary', originalDimension?: number): Float32Array;
 export function dequantize(
   data: Float32Array | Int8Array | Uint8Array,
   type: QuantizationType,
   originalDimension?: number,
-): number[] {
+): Float32Array {
   switch (type) {
     case 'fp16': {
-      const result = new Array<number>(data.length);
-      for (let i = 0; i < data.length; i++) {
-        result[i] = data[i]; // Already stored as float32
-      }
-      return result;
+      // Already stored as float32 — return a copy
+      return new Float32Array(data);
     }
 
     case 'int8': {
-      const result = new Array<number>(data.length);
+      const result = new Float32Array(data.length);
       for (let i = 0; i < data.length; i++) {
         result[i] = (data as Int8Array)[i] / 127;
       }
@@ -164,7 +162,7 @@ export function dequantize(
     }
 
     case 'uint8': {
-      const result = new Array<number>(data.length);
+      const result = new Float32Array(data.length);
       for (let i = 0; i < data.length; i++) {
         result[i] = data[i] / 255;
       }
@@ -173,15 +171,14 @@ export function dequantize(
 
     case 'binary': {
       const byteCount = data.length;
-      const result: number[] = [];
-      for (let byteIdx = 0; byteIdx < byteCount; byteIdx++) {
-        for (let bitIdx = 7; bitIdx >= 0; bitIdx--) {
-          const bit = (data[byteIdx] >> bitIdx) & 1;
-          result.push(bit === 1 ? 1 : -1);
-        }
-      }
-      if (originalDimension !== undefined && originalDimension < result.length) {
-        return result.slice(0, originalDimension);
+      const totalBits = byteCount * 8;
+      const dim = originalDimension !== undefined ? originalDimension : totalBits;
+      const result = new Float32Array(dim);
+      for (let i = 0; i < dim; i++) {
+        const byteIdx = Math.floor(i / 8);
+        const bitIdx = 7 - (i % 8); // MSB first
+        const bit = (data[byteIdx] >> bitIdx) & 1;
+        result[i] = bit === 1 ? 1 : -1;
       }
       return result;
     }

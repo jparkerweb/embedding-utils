@@ -6,6 +6,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { ValidationError } from '../types';
+import type { Vector } from '../types';
+import { normalize } from './vector';
 
 /**
  * Truncates embedding(s) to a target number of dimensions (Matryoshka-style).
@@ -19,52 +21,59 @@ import { ValidationError } from '../types';
  * other Matryoshka-trained models. Using this with non-Matryoshka models
  * will produce degraded results.
  *
- * **Overloaded:** Accepts either a single vector (`number[]`) or a batch
- * of vectors (`number[][]`). The return type matches the input shape.
+ * **Overloaded:** Accepts either a single vector or a batch of vectors.
+ * Always returns Float32Array output.
  *
  * @param input - A single embedding vector or array of embedding vectors
  * @param targetDims - The desired number of dimensions (must be > 0 and <= vector length)
- * @returns Truncated vector(s) matching the input shape
+ * @returns Truncated vector(s) as Float32Array
  * @throws {ValidationError} If targetDims is <= 0 or exceeds vector length
  *
  * @example
  * // Single vector
- * truncateDimensions([1, 2, 3, 4], 2); // [1, 2]
+ * truncateDimensions([1, 2, 3, 4], 2); // Float32Array [1, 2]
  *
  * @example
  * // Batch of vectors
- * truncateDimensions([[1, 2, 3], [4, 5, 6]], 2); // [[1, 2], [4, 5]]
+ * truncateDimensions([[1, 2, 3], [4, 5, 6]], 2); // [Float32Array [1, 2], Float32Array [4, 5]]
  *
  * @example
  * // Reduce OpenAI 1536-dim embeddings to 256 for cheaper storage
  * const compact = truncateDimensions(embeddings, 256);
  */
-export function truncateDimensions(embedding: number[], targetDims: number): number[];
-export function truncateDimensions(embeddings: number[][], targetDims: number): number[][];
+export function truncateDimensions(embedding: Vector, targetDims: number): Float32Array;
+export function truncateDimensions(embeddings: Vector[], targetDims: number): Float32Array[];
 export function truncateDimensions(
-  input: number[] | number[][],
+  input: Vector | Vector[],
   targetDims: number
-): number[] | number[][] {
+): Float32Array | Float32Array[] {
   if (targetDims <= 0) {
     throw new ValidationError('targetDims must be greater than 0');
   }
 
-  if (Array.isArray(input[0])) {
-    const batch = input as number[][];
+  // Check if input is a batch (array of vectors)
+  if (Array.isArray(input) && input.length > 0 && (Array.isArray(input[0]) || input[0] instanceof Float32Array)) {
+    const batch = input as Vector[];
     return batch.map((v) => truncateSingle(v, targetDims));
   }
 
-  return truncateSingle(input as number[], targetDims);
+  return truncateSingle(input as Vector, targetDims);
 }
 
-function truncateSingle(v: number[], targetDims: number): number[] {
+function truncateSingle(v: Vector, targetDims: number): Float32Array {
   if (targetDims > v.length) {
     throw new ValidationError(
       `targetDims (${targetDims}) exceeds vector length (${v.length})`
     );
   }
-  if (targetDims === v.length) return v;
-  return v.slice(0, targetDims);
+  let result: Float32Array;
+  if (v instanceof Float32Array) {
+    result = targetDims === v.length ? v.slice() : v.slice(0, targetDims);
+  } else {
+    result = new Float32Array(v.slice(0, targetDims));
+  }
+  // L2-normalize the truncated vector (Matryoshka best practice)
+  return normalize(result);
 }
 
 /**
@@ -82,7 +91,7 @@ function truncateSingle(v: number[], targetDims: number): number[] {
  * validateDimensions([[1,2], [3,4,5]]); // { valid: false, dimension: 2, mismatches: [1] }
  */
 export function validateDimensions(
-  embeddings: number[][],
+  embeddings: Vector[],
   expectedDim?: number,
 ): { valid: boolean; dimension: number; mismatches: number[] } {
   if (embeddings.length === 0) {

@@ -13,20 +13,31 @@ describe('serialize / deserialize — JSON format', () => {
   it('roundtrips a single embedding', () => {
     const data = serialize(singleEmbedding, 'json');
     const result = deserialize(data, 'json');
-    expect(result.embeddings).toEqual(singleEmbedding);
+    expect(result.embeddings).toHaveLength(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
+    for (let i = 0; i < singleEmbedding[0].length; i++) {
+      expect(result.embeddings[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
+    }
   });
 
   it('roundtrips batch embeddings', () => {
     const data = serialize(batchEmbeddings, 'json');
     const result = deserialize(data, 'json');
-    expect(result.embeddings).toEqual(batchEmbeddings);
+    expect(result.embeddings).toHaveLength(batchEmbeddings.length);
+    for (let i = 0; i < batchEmbeddings.length; i++) {
+      expect(result.embeddings[i]).toBeInstanceOf(Float32Array);
+      for (let j = 0; j < batchEmbeddings[i].length; j++) {
+        expect(result.embeddings[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
+      }
+    }
   });
 
-  it('preserves numeric precision', () => {
+  it('preserves Float32 precision through JSON roundtrip', () => {
     const precise = [[1.234567890123456]];
     const data = serialize(precise, 'json');
     const result = deserialize(data, 'json');
-    expect(result.embeddings[0][0]).toBe(1.234567890123456);
+    // JSON preserves float64 precision, but deserialize returns Float32Array (32-bit)
+    expect(result.embeddings[0][0]).toBeCloseTo(1.234567890123456, 5);
   });
 
   it('output is a valid JSON string', () => {
@@ -45,6 +56,7 @@ describe('serialize / deserialize — binary format (v2)', () => {
     const data = serialize(singleEmbedding, 'binary');
     const result = deserialize(data, 'binary');
     expect(result.embeddings.length).toBe(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
     for (let i = 0; i < singleEmbedding[0].length; i++) {
       expect(result.embeddings[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
     }
@@ -55,6 +67,7 @@ describe('serialize / deserialize — binary format (v2)', () => {
     const result = deserialize(data, 'binary');
     expect(result.embeddings.length).toBe(batchEmbeddings.length);
     for (let i = 0; i < batchEmbeddings.length; i++) {
+      expect(result.embeddings[i]).toBeInstanceOf(Float32Array);
       for (let j = 0; j < batchEmbeddings[i].length; j++) {
         expect(result.embeddings[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
       }
@@ -83,6 +96,7 @@ describe('serialize / deserialize — base64 format', () => {
     const data = serialize(singleEmbedding, 'base64');
     const result = deserialize(data, 'base64');
     expect(result.embeddings.length).toBe(1);
+    expect(result.embeddings[0]).toBeInstanceOf(Float32Array);
     for (let i = 0; i < singleEmbedding[0].length; i++) {
       expect(result.embeddings[0][i]).toBeCloseTo(singleEmbedding[0][i], 6);
     }
@@ -93,6 +107,7 @@ describe('serialize / deserialize — base64 format', () => {
     const result = deserialize(data, 'base64');
     expect(result.embeddings.length).toBe(batchEmbeddings.length);
     for (let i = 0; i < batchEmbeddings.length; i++) {
+      expect(result.embeddings[i]).toBeInstanceOf(Float32Array);
       for (let j = 0; j < batchEmbeddings[i].length; j++) {
         expect(result.embeddings[i][j]).toBeCloseTo(batchEmbeddings[i][j], 6);
       }

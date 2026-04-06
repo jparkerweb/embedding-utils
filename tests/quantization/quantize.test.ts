@@ -19,7 +19,8 @@ describe('quantize / dequantize — fp16', () => {
   it('handles zero vector', () => {
     const quantized = quantize([0, 0, 0], 'fp16');
     const restored = dequantize(quantized, 'fp16');
-    expect(restored).toEqual([0, 0, 0]);
+    expect(restored).toBeInstanceOf(Float32Array);
+    expect(Array.from(restored)).toEqual([0, 0, 0]);
   });
 
   it('handles Infinity', () => {
@@ -136,7 +137,8 @@ describe('quantize / dequantize — binary', () => {
     const embedding = [0.5, -0.3, 0.1, 0.0, 1.0, -1.0, -0.5, 0.9];
     const quantized = quantize(embedding, 'binary');
     const restored = dequantize(quantized, 'binary');
-    expect(restored).toEqual([1, -1, 1, -1, 1, -1, -1, 1]);
+    expect(restored).toBeInstanceOf(Float32Array);
+    expect(Array.from(restored)).toEqual([1, -1, 1, -1, 1, -1, -1, 1]);
   });
 
   it('handles non-multiple-of-8 length', () => {

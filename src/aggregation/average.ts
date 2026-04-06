@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { ValidationError } from '../types';
+import type { Vector } from '../types';
 import { validateEmbeddings } from '../internal/validation';
 
 /**
@@ -31,17 +32,13 @@ import { validateEmbeddings } from '../internal/validation';
  * @throws {ValidationError} If the array is empty or dimensions mismatch
  *
  * @example
- * averageEmbeddings([[1, 0], [0, 1]]); // [0.5, 0.5]
- *
- * @example
- * // Average chunk embeddings to get a document-level embedding
- * const docEmbedding = averageEmbeddings(chunkEmbeddings);
+ * averageEmbeddings([[1, 0], [0, 1]]); // Float32Array [0.5, 0.5]
  */
-export function averageEmbeddings(embeddings: number[][]): number[] {
+export function averageEmbeddings(embeddings: Vector[]): Float32Array {
   validateEmbeddings(embeddings);
   const dim = embeddings[0].length;
   const n = embeddings.length;
-  const result = new Array<number>(dim).fill(0);
+  const result = new Float32Array(dim);
   for (let i = 0; i < n; i++) {
     for (let j = 0; j < dim; j++) {
       result[j] += embeddings[i][j];
@@ -71,13 +68,9 @@ export function averageEmbeddings(embeddings: number[][]): number[] {
  * @throws {ValidationError} If arrays are empty, dimensions mismatch, or lengths differ
  *
  * @example
- * weightedAverage([[1, 0], [0, 1]], [3, 1]); // [0.75, 0.25]
- *
- * @example
- * // Weight title 3x, body 2x, metadata 1x
- * const embedding = weightedAverage([titleEmb, bodyEmb, metaEmb], [3, 2, 1]);
+ * weightedAverage([[1, 0], [0, 1]], [3, 1]); // Float32Array [0.75, 0.25]
  */
-export function weightedAverage(embeddings: number[][], weights: number[]): number[] {
+export function weightedAverage(embeddings: Vector[], weights: number[]): Float32Array {
   validateEmbeddings(embeddings);
   if (embeddings.length !== weights.length) {
     throw new ValidationError(
@@ -85,7 +78,7 @@ export function weightedAverage(embeddings: number[][], weights: number[]): numb
     );
   }
   const dim = embeddings[0].length;
-  const result = new Array<number>(dim).fill(0);
+  const result = new Float32Array(dim);
   let totalWeight = 0;
   for (let i = 0; i < embeddings.length; i++) {
     totalWeight += weights[i];
@@ -120,25 +113,19 @@ export function weightedAverage(embeddings: number[][], weights: number[]): numb
  *               (before this new one)
  * @returns Updated average embedding (now represents count + 1 embeddings)
  * @throws {ValidationError} If vector dimensions mismatch
- *
- * @example
- * let avg = [1, 2, 3];
- * avg = incrementalAverage(avg, [4, 5, 6], 1); // now avg of 2 embeddings
- * avg = incrementalAverage(avg, [7, 8, 9], 2); // now avg of 3 embeddings
- * // Numerically equivalent to: averageEmbeddings([[1,2,3], [4,5,6], [7,8,9]])
  */
 export function incrementalAverage(
-  currentAvg: number[],
-  newEmbedding: number[],
+  currentAvg: Vector,
+  newEmbedding: Vector,
   count: number,
-): number[] {
+): Float32Array {
   if (currentAvg.length !== newEmbedding.length) {
     throw new ValidationError(
       `Dimension mismatch: ${currentAvg.length} vs ${newEmbedding.length}`,
     );
   }
   const dim = currentAvg.length;
-  const result = new Array<number>(dim);
+  const result = new Float32Array(dim);
   const divisor = count + 1;
   for (let i = 0; i < dim; i++) {
     result[i] = currentAvg[i] + (newEmbedding[i] - currentAvg[i]) / divisor;
@@ -153,41 +140,18 @@ export function incrementalAverage(
  * one embedding at a time, it folds an entire array of new embeddings into the
  * existing average in a single, numerically stable operation.
  *
- * The formula used is:
- * ```
- * result[i] = (currentAvg[i] * count + sum(newEmbeddings[*][i])) / (count + newEmbeddings.length)
- * ```
- *
- * This produces results that are mathematically equivalent to computing the full
- * average of all embeddings from scratch, but without needing to store or re-process
- * the historical data. This is critical for incremental pipelines (e.g., updating
- * topic cluster centroids as new training data arrives).
- *
  * @param currentAvg - The current average embedding (centroid of previous data)
  * @param newEmbeddings - Array of new embedding vectors to incorporate
  * @param count - The number of embeddings that were already averaged into `currentAvg`
  * @returns Updated average embedding incorporating all new embeddings
  * @throws {ValidationError} If dimensions mismatch between currentAvg and any new embedding,
  *         or if newEmbeddings is empty
- *
- * @example
- * // Existing centroid from 10 embeddings, adding 3 more
- * const updated = batchIncrementalAverage(existingCentroid, threeNewEmbeddings, 10);
- * // Equivalent to: averageEmbeddings([...all13embeddings])
- *
- * @example
- * // Incremental topic pipeline: update cluster centroid as new phrases arrive
- * const newCentroid = batchIncrementalAverage(
- *   cluster.centroid,
- *   newPhraseEmbeddings,
- *   cluster.size,
- * );
  */
 export function batchIncrementalAverage(
-  currentAvg: number[],
-  newEmbeddings: number[][],
+  currentAvg: Vector,
+  newEmbeddings: Vector[],
   count: number,
-): number[] {
+): Float32Array {
   if (newEmbeddings.length === 0) {
     throw new ValidationError('newEmbeddings array must be non-empty');
   }
@@ -201,7 +165,7 @@ export function batchIncrementalAverage(
   }
 
   const totalCount = count + newEmbeddings.length;
-  const result = new Array<number>(dim);
+  const result = new Float32Array(dim);
 
   for (let j = 0; j < dim; j++) {
     let newSum = 0;
@@ -220,8 +184,8 @@ export function batchIncrementalAverage(
  * @returns The centroid embedding vector
  * @throws {ValidationError} If the array is empty or dimensions mismatch
  * @example
- * centroid([[1, 0], [0, 1]]); // [0.5, 0.5]
+ * centroid([[1, 0], [0, 1]]); // Float32Array [0.5, 0.5]
  */
-export function centroid(embeddings: number[][]): number[] {
+export function centroid(embeddings: Vector[]): Float32Array {
   return averageEmbeddings(embeddings);
 }

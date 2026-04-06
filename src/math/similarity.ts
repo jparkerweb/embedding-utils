@@ -8,6 +8,7 @@
 // mismatched-dimension vectors.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import type { Vector } from '../types';
 import { validateVectorPair } from '../internal/validation';
 
 /**
@@ -38,7 +39,7 @@ import { validateVectorPair } from '../internal/validation';
  * // For normalized embeddings, dot product ≈ cosine similarity
  * // dotProduct(normalize(a), normalize(b)) ≈ cosineSimilarity(a, b)
  */
-export function dotProduct(a: number[], b: number[]): number {
+export function dotProduct(a: Vector, b: Vector): number {
   validateVectorPair(a, b);
   let sum = 0;
   for (let i = 0; i < a.length; i++) {
@@ -84,7 +85,7 @@ export function dotProduct(a: number[], b: number[]): number {
  * // Compare a query to candidate documents
  * const scores = documents.map(doc => cosineSimilarity(queryEmbed, doc));
  */
-export function cosineSimilarity(a: number[], b: number[]): number {
+export function cosineSimilarity(a: Vector, b: Vector): number {
   validateVectorPair(a, b);
 
   let dot = 0;

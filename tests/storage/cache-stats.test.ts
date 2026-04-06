@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createLRUCache, warmCache } from '../../src/storage/cache';
 
+const f = (arr: number[]) => new Float32Array(arr);
+
 describe('CacheStats', () => {
   it('starts with zero stats', () => {
     const cache = createLRUCache({ maxSize: 10 });
@@ -15,7 +17,7 @@ describe('CacheStats', () => {
 
   it('tracks hits', async () => {
     const cache = createLRUCache({ maxSize: 10 });
-    await cache.set('a', [[1, 2, 3]]);
+    await cache.set('a', [f([1, 2, 3])]);
     await cache.get('a');
     await cache.get('a');
 
@@ -36,9 +38,9 @@ describe('CacheStats', () => {
 
   it('tracks evictions', async () => {
     const cache = createLRUCache({ maxSize: 2 });
-    await cache.set('a', [[1]]);
-    await cache.set('b', [[2]]);
-    await cache.set('c', [[3]]); // evicts 'a'
+    await cache.set('a', [f([1])]);
+    await cache.set('b', [f([2])]);
+    await cache.set('c', [f([3])]); // evicts 'a'
 
     const stats = cache.getStats();
     expect(stats.evictions).toBe(1);
@@ -47,7 +49,7 @@ describe('CacheStats', () => {
 
   it('computes hitRate correctly', async () => {
     const cache = createLRUCache({ maxSize: 10 });
-    await cache.set('a', [[1]]);
+    await cache.set('a', [f([1])]);
     await cache.get('a'); // hit
     await cache.get('b'); // miss
     await cache.get('a'); // hit
@@ -66,8 +68,8 @@ describe('CacheStats', () => {
 
   it('tracks size accurately', async () => {
     const cache = createLRUCache({ maxSize: 10 });
-    await cache.set('a', [[1]]);
-    await cache.set('b', [[2]]);
+    await cache.set('a', [f([1])]);
+    await cache.set('b', [f([2])]);
     expect(cache.getStats().size).toBe(2);
 
     await cache.delete('a');
@@ -82,22 +84,23 @@ describe('warmCache', () => {
   it('populates cache from data array', async () => {
     const cache = createLRUCache({ maxSize: 10 });
     await warmCache(cache, [
-      { key: 'a', value: [[1, 2, 3]] },
-      { key: 'b', value: [[4, 5, 6]] },
+      { key: 'a', value: [f([1, 2, 3])] },
+      { key: 'b', value: [f([4, 5, 6])] },
     ]);
 
     const a = await cache.get('a');
-    expect(a).toEqual([[1, 2, 3]]);
+    expect(a![0]).toBeInstanceOf(Float32Array);
+    expect(Array.from(a![0])).toEqual([1, 2, 3]);
     const b = await cache.get('b');
-    expect(b).toEqual([[4, 5, 6]]);
+    expect(Array.from(b![0])).toEqual([4, 5, 6]);
   });
 
   it('respects cache maxSize (LRU eviction)', async () => {
     const cache = createLRUCache({ maxSize: 2 });
     await warmCache(cache, [
-      { key: 'a', value: [[1]] },
-      { key: 'b', value: [[2]] },
-      { key: 'c', value: [[3]] },
+      { key: 'a', value: [f([1])] },
+      { key: 'b', value: [f([2])] },
+      { key: 'c', value: [f([3])] },
     ]);
 
     // 'a' should have been evicted
@@ -105,9 +108,9 @@ describe('warmCache', () => {
     expect(a).toBeUndefined();
 
     const b = await cache.get('b');
-    expect(b).toEqual([[2]]);
+    expect(Array.from(b![0])).toEqual([2]);
     const c = await cache.get('c');
-    expect(c).toEqual([[3]]);
+    expect(Array.from(c![0])).toEqual([3]);
   });
 
   it('handles empty data array', async () => {

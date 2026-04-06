@@ -8,38 +8,18 @@
 import { computeScore } from '../internal/metrics';
 import { validateEmbeddings } from '../internal/validation';
 import { ValidationError } from '../types';
-import type { SearchOptions } from '../types';
+import type { SearchOptions, Vector } from '../types';
 
 /**
  * Computes a pairwise NxN similarity matrix for a set of embeddings.
- *
- * The result is a symmetric matrix where `matrix[i][j]` is the similarity
- * between embedding `i` and embedding `j`. The diagonal contains self-similarity
- * scores (1.0 for cosine on non-zero vectors).
- *
- * **Optimization:** Only computes the upper triangle and mirrors to the lower
- * triangle, performing N*(N-1)/2 comparisons instead of N^2.
- *
- * **When to use:**
- * - Content audits: find redundant documentation among support articles
- * - Overlap visualization: power heatmaps showing which items cover similar ground
- * - Cluster quality analysis: inspect inter-cluster vs intra-cluster distances
- *
- * **Complexity:** O(n^2) in both time and space. For very large sets (10,000+),
- * consider sampling or using {@link topK} per item instead.
  *
  * @param embeddings - Array of embedding vectors (must be non-empty)
  * @param options - Optional similarity metric (defaults to 'cosine')
  * @returns A symmetric NxN matrix of similarity scores
  * @throws {ValidationError} If the embeddings array is empty
- *
- * @example
- * const matrix = similarityMatrix(embeddings);
- * // matrix[0][1] === matrix[1][0]  (symmetric)
- * // matrix[0][0] === 1.0           (self-similarity for cosine)
  */
 export function similarityMatrix(
-  embeddings: number[][],
+  embeddings: Vector[],
   options?: SearchOptions,
 ): number[][] {
   if (embeddings.length === 0) {

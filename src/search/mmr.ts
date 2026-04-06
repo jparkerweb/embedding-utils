@@ -1,12 +1,8 @@
 import { computeScore } from '../internal/metrics';
-import type { MMROptions } from '../types';
+import type { MMROptions, Vector } from '../types';
 
 /**
  * Maximal Marginal Relevance (MMR) search for diverse results.
- *
- * Balances relevance to the query with diversity among selected results.
- * At each step, selects the candidate that maximizes:
- *   `lambda * sim(candidate, query) - (1 - lambda) * max(sim(candidate, selected))`
  *
  * @param query - The query embedding vector
  * @param corpus - Array of candidate embedding vectors
@@ -15,8 +11,8 @@ import type { MMROptions } from '../types';
  * @returns Array of results sorted by selection order (most relevant first)
  */
 export function mmrSearch(
-  query: number[],
-  corpus: number[][],
+  query: Vector,
+  corpus: Vector[],
   k: number,
   options?: MMROptions,
 ): Array<{ index: number; score: number }> {

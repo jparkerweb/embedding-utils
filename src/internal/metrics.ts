@@ -1,6 +1,6 @@
 import { cosineSimilarity, dotProduct } from '../math/similarity';
 import { euclideanDistance, manhattanDistance } from '../math/distance';
-import type { SimilarityMetric } from '../types';
+import type { SimilarityMetric, Vector } from '../types';
 import { ValidationError } from '../types';
 
 /**
@@ -9,7 +9,7 @@ import { ValidationError } from '../types';
  * using the formula: `1 / (1 + distance)` so that higher = more similar.
  * @internal
  */
-export function computeScore(a: number[], b: number[], metric: SimilarityMetric): number {
+export function computeScore(a: Vector, b: Vector, metric: SimilarityMetric): number {
   switch (metric) {
     case 'cosine':
       return cosineSimilarity(a, b);
@@ -30,7 +30,7 @@ export function computeScore(a: number[], b: number[], metric: SimilarityMetric)
  * using `1 - similarity`.
  * @internal
  */
-export function computeDistance(a: number[], b: number[], metric: SimilarityMetric): number {
+export function computeDistance(a: Vector, b: Vector, metric: SimilarityMetric): number {
   switch (metric) {
     case 'cosine':
       return 1 - cosineSimilarity(a, b);

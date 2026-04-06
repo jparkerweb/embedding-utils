@@ -4,17 +4,20 @@ import { computeCentroid, computePairwiseCohesion } from '../../src/internal/clu
 describe('computeCentroid', () => {
   it('computes mean of known vectors', () => {
     const centroid = computeCentroid([[1, 0], [0, 1]]);
-    expect(centroid).toEqual([0.5, 0.5]);
+    expect(centroid).toBeInstanceOf(Float32Array);
+    expect(Array.from(centroid)).toEqual([0.5, 0.5]);
   });
 
   it('returns the vector itself for single-member', () => {
     const centroid = computeCentroid([[3, 4, 5]]);
-    expect(centroid).toEqual([3, 4, 5]);
+    expect(centroid).toBeInstanceOf(Float32Array);
+    expect(Array.from(centroid)).toEqual([3, 4, 5]);
   });
 
   it('computes centroid of three vectors', () => {
     const centroid = computeCentroid([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
-    expect(centroid).toEqual([4, 5, 6]);
+    expect(centroid).toBeInstanceOf(Float32Array);
+    expect(Array.from(centroid)).toEqual([4, 5, 6]);
   });
 });
 

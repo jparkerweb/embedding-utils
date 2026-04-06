@@ -125,4 +125,80 @@ describe('createProvider', () => {
     const [url] = fetchSpy.mock.calls[0];
     expect(url).toBe('https://openrouter.ai/api/v1/embeddings');
   });
+
+  it('should create Together provider with correct base URL', async () => {
+    fetchSpy.mockResolvedValue(
+      mockFetchResponse({
+        data: [{ embedding: [0.1], index: 0 }],
+        usage: { total_tokens: 1 },
+      }),
+    );
+
+    const provider = createProvider('together', {
+      apiKey: 'key',
+      model: 'togethercomputer/m2-bert-80M-8k-retrieval',
+    });
+    expect(provider.name).toBe('together.xyz');
+
+    await provider.embed('test');
+    const [url] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://api.together.xyz/v1/embeddings');
+  });
+
+  it('should create Fireworks provider with correct base URL', async () => {
+    fetchSpy.mockResolvedValue(
+      mockFetchResponse({
+        data: [{ embedding: [0.1], index: 0 }],
+        usage: { total_tokens: 1 },
+      }),
+    );
+
+    const provider = createProvider('fireworks', {
+      apiKey: 'key',
+      model: 'nomic-ai/nomic-embed-text-v1.5',
+    });
+    expect(provider.name).toBe('fireworks.ai');
+
+    await provider.embed('test');
+    const [url] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://api.fireworks.ai/inference/v1/embeddings');
+  });
+
+  it('should create Nomic provider with correct base URL', async () => {
+    fetchSpy.mockResolvedValue(
+      mockFetchResponse({
+        data: [{ embedding: [0.1], index: 0 }],
+        usage: { total_tokens: 1 },
+      }),
+    );
+
+    const provider = createProvider('nomic', {
+      apiKey: 'key',
+      model: 'nomic-embed-text-v1.5',
+    });
+    expect(provider.name).toBe('api-atlas.nomic.ai');
+
+    await provider.embed('test');
+    const [url] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://api-atlas.nomic.ai/v1/embeddings');
+  });
+
+  it('should create Mixedbread provider with correct base URL', async () => {
+    fetchSpy.mockResolvedValue(
+      mockFetchResponse({
+        data: [{ embedding: [0.1], index: 0 }],
+        usage: { total_tokens: 1 },
+      }),
+    );
+
+    const provider = createProvider('mixedbread', {
+      apiKey: 'key',
+      model: 'mixedbread-ai/mxbai-embed-large-v1',
+    });
+    expect(provider.name).toBe('mixedbread.ai');
+
+    await provider.embed('test');
+    const [url] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://api.mixedbread.ai/v1/embeddings');
+  });
 });

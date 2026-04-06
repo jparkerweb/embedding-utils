@@ -8,7 +8,8 @@ describe('SearchIndex', () => {
     const item = index.get('doc1');
     expect(item).toBeDefined();
     expect(item!.id).toBe('doc1');
-    expect(item!.embedding).toEqual([1, 0, 0]);
+    expect(item!.embedding).toBeInstanceOf(Float32Array);
+    expect(Array.from(item!.embedding)).toEqual([1, 0, 0]);
     expect(item!.metadata).toEqual({ title: 'Hello' });
   });
 
@@ -24,7 +25,7 @@ describe('SearchIndex', () => {
     index.add('doc1', [1, 0, 0]);
     index.add('doc1', [0, 1, 0], { updated: true });
     expect(index.size).toBe(1);
-    expect(index.get('doc1')!.embedding).toEqual([0, 1, 0]);
+    expect(Array.from(index.get('doc1')!.embedding)).toEqual([0, 1, 0]);
     expect(index.get('doc1')!.metadata).toEqual({ updated: true });
   });
 

@@ -1,4 +1,4 @@
-import type { EmbeddingProvider, EmbedOptions } from '../types';
+import type { EmbeddingProvider, EmbedOptions, Vector } from '../types';
 import { ValidationError } from '../types';
 import { averageEmbeddings } from './average';
 
@@ -11,38 +11,20 @@ import { averageEmbeddings } from './average';
  * 2. Applies an aggregation function (default: {@link averageEmbeddings}) to
  *    combine them into a single vector
  *
- * **When to use:** Creating a single "entity embedding" from multiple text
- * fields. For example, combine a user's bio, interests, and recent posts
- * into one "user profile" vector for recommendation matching.
- *
- * **Custom aggregation:** Pass any function that takes `number[][]` and
- * returns `number[]`. Use {@link maxPooling} to preserve strongest signals,
- * or {@link weightedAverage} with custom weights.
- *
  * @param texts - Array of text strings to embed (must be non-empty)
  * @param provider - The embedding provider to use for text-to-vector conversion
  * @param options - Optional aggregation function and embed options
  * @returns A single combined embedding vector
  * @throws {ValidationError} If the texts array is empty
- *
- * @example
- * // Default averaging
- * const embedding = await combineEmbeddings(['hello', 'world'], provider);
- *
- * @example
- * // Max pooling to preserve strongest signals
- * const embedding = await combineEmbeddings(texts, provider, {
- *   aggregate: maxPooling,
- * });
  */
 export async function combineEmbeddings(
   texts: string[],
   provider: EmbeddingProvider,
   options?: {
-    aggregate?: (embeddings: number[][]) => number[];
+    aggregate?: (embeddings: Vector[]) => Float32Array;
     embedOptions?: EmbedOptions;
   },
-): Promise<number[]> {
+): Promise<Float32Array> {
   if (texts.length === 0) {
     throw new ValidationError('texts array must be non-empty');
   }

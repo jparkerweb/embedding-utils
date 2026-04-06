@@ -1,6 +1,7 @@
 import type {
   EmbeddingStoreConfig,
   StoredItem,
+  Vector,
 } from '../types';
 import { SearchIndex } from '../search/search-index';
 import { withCache } from '../providers/middleware';
@@ -24,7 +25,7 @@ export interface EmbeddingStore {
   ): Promise<Array<StoredItem & { score: number }>>;
   /** Search by a pre-computed embedding vector. */
   searchByEmbedding(
-    embedding: number[],
+    embedding: Vector,
     options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean },
   ): Array<StoredItem & { score: number }>;
   /** Remove an item by ID. */
@@ -82,7 +83,7 @@ export function createEmbeddingStore(config: EmbeddingStoreConfig): EmbeddingSto
     },
 
     searchByEmbedding(
-      embedding: number[],
+      embedding: Vector,
       options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean },
     ): Array<StoredItem & { score: number }> {
       return index.search(embedding, options);

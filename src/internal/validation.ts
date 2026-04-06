@@ -1,12 +1,24 @@
 import { ValidationError, DimensionMismatchError } from '../types';
+import type { Vector } from '../types';
 
 /**
- * Validates that a value is a non-empty array of finite numbers.
+ * Validates that a value is a non-empty array of finite numbers or a non-empty Float32Array.
  * @internal
  */
-export function validateVector(v: unknown, name = 'Vector'): asserts v is number[] {
+export function validateVector(v: unknown, name = 'Vector'): asserts v is Vector {
   if (v == null) {
     throw new ValidationError(`${name} must not be null or undefined`);
+  }
+  if (v instanceof Float32Array) {
+    if (v.length === 0) {
+      throw new ValidationError(`${name} must be non-empty`);
+    }
+    for (let i = 0; i < v.length; i++) {
+      if (!Number.isFinite(v[i])) {
+        throw new ValidationError(`${name}[${i}] must be a finite number, got ${v[i]}`);
+      }
+    }
+    return;
   }
   if (!Array.isArray(v)) {
     throw new ValidationError(`${name} must be an array`);
@@ -26,8 +38,8 @@ export function validateVector(v: unknown, name = 'Vector'): asserts v is number
  * @internal
  */
 export function validateVectorPair(
-  a: number[],
-  b: number[],
+  a: Vector,
+  b: Vector,
   nameA = 'Vector A',
   nameB = 'Vector B',
 ): void {
@@ -45,7 +57,7 @@ export function validateVectorPair(
  * Validates that an array of embeddings is non-empty and all have matching dimensions.
  * @internal
  */
-export function validateEmbeddings(embeddings: number[][], name = 'Embeddings'): void {
+export function validateEmbeddings(embeddings: Vector[], name = 'Embeddings'): void {
   if (embeddings.length === 0) {
     throw new ValidationError(`${name} array must be non-empty`);
   }
