@@ -1139,7 +1139,7 @@ Manage locally-downloaded ONNX models for the local provider. Only relevant if y
 - **`listModels`** -- See which models are cached locally. Useful for admin dashboards showing disk usage.
 - **`deleteModel`** -- Remove old model versions after upgrading to a newer one, or clean up models you no longer use.
 - **`setModelPath`** -- Point the model cache to a custom directory. In a shared server environment, use a shared NFS mount so multiple workers don't each download their own copy.
-- **`getModelInfo`** -- Check a model's dimensions (384 vs 768) and size (22M vs 109M) before downloading, to pick the right trade-off between inference speed and embedding quality.
+- **`getModelInfo`** -- Check a model's dimensions (384 to 1024), size (22M to 595M), max tokens, and pooling method before downloading, to pick the right trade-off between inference speed and embedding quality.
 
 ```typescript
 import { downloadModel, listModels, deleteModel, setModelPath, getModelInfo, MODEL_REGISTRY } from 'embedding-utils';
@@ -1159,12 +1159,59 @@ setModelPath('/path/to/models');
 
 #### Built-in model registry
 
-| Model | Dimensions | Size | Description |
-|-------|:----------:|:----:|-------------|
-| `Xenova/all-MiniLM-L12-v2` | 384 | 33M | All-round English embedding model |
-| `Xenova/all-MiniLM-L6-v2` | 384 | 22M | Lightweight English embedding model |
-| `Xenova/bge-small-en-v1.5` | 384 | 33M | BGE small English (asymmetric prefixes) |
-| `Xenova/bge-base-en-v1.5` | 768 | 109M | BGE base English (asymmetric prefixes) |
+All models below auto-download from HuggingFace on first use and run locally via ONNX (`@huggingface/transformers`). The **Pooling** column is the method the model was trained with — the local provider applies it automatically, so you don't need to set anything. **Prefix** notes which models are asymmetric (they prepend text based on `inputType: 'document' | 'query'`).
+
+**General-purpose English**
+
+| Model | Dims | Max Tokens | Size | Pooling | Prefix |
+|-------|:----:|:----------:|:----:|:-------:|--------|
+| `Xenova/all-MiniLM-L6-v2` | 384 | 256 | 22M | mean | — |
+| `Xenova/all-MiniLM-L12-v2` | 384 | 256 | 33M | mean | — |
+| `Xenova/all-mpnet-base-v2` | 768 | 384 | 109M | mean | — |
+| `Xenova/distilroberta-base` | 768 | 512 | 82M | mean | — |
+| `Xenova/gte-small` | 384 | 512 | 33M | mean | — |
+| `Xenova/gte-base` | 768 | 512 | 109M | mean | — |
+| `Xenova/gte-large` | 1024 | 512 | 335M | mean | — |
+| `Xenova/bge-small-en-v1.5` | 384 | 512 | 33M | cls | query |
+| `Xenova/bge-base-en-v1.5` | 768 | 512 | 109M | cls | query |
+| `Xenova/bge-large-en-v1.5` | 1024 | 512 | 335M | cls | query |
+| `mixedbread-ai/mxbai-embed-large-v1` | 1024 | 512 | 335M | cls | query |
+| `Snowflake/snowflake-arctic-embed-m-v1.5` | 768 | 512 | 109M | cls | query |
+| `Snowflake/snowflake-arctic-embed-l` | 1024 | 512 | 335M | cls | query |
+| `Xenova/e5-small-v2` | 384 | 512 | 33M | mean | query/passage |
+| `Xenova/e5-base-v2` | 768 | 512 | 109M | mean | query/passage |
+| `Xenova/e5-large-v2` | 1024 | 512 | 335M | mean | query/passage |
+
+**Long-context** (8K+ tokens)
+
+| Model | Dims | Max Tokens | Size | Pooling | Prefix |
+|-------|:----:|:----------:|:----:|:-------:|--------|
+| `Xenova/jina-embeddings-v2-small-en` | 512 | 8192 | 33M | mean | — |
+| `Xenova/jina-embeddings-v2-base-en` | 768 | 8192 | 137M | mean | — |
+| `nomic-ai/nomic-embed-text-v1.5` | 768 | 8192 | 137M | mean | search_query/search_document |
+| `onnx-community/Qwen3-Embedding-0.6B-ONNX`† | 1024 | 32768 | 595M | last_token | instruction (query) |
+
+**Multilingual**
+
+| Model | Dims | Max Tokens | Size | Pooling | Prefix |
+|-------|:----:|:----------:|:----:|:-------:|--------|
+| `Xenova/multilingual-MiniLM-L12-v2` | 384 | 512 | 33M | mean | — |
+| `Xenova/paraphrase-multilingual-MiniLM-L12-v2` | 384 | 128 | 118M | mean | — |
+| `Xenova/multilingual-e5-small` | 384 | 512 | 118M | mean | query/passage |
+| `Xenova/multilingual-e5-base` | 768 | 512 | 278M | mean | query/passage |
+| `Xenova/multilingual-e5-large`† | 1024 | 512 | 560M | mean | query/passage |
+| `onnx-community/gte-multilingual-base` | 768 | 8192 | 305M | cls | — |
+| `Xenova/bge-m3`† | 1024 | 8192 | 568M | cls | — |
+
+> **† Large models:** `Qwen3-Embedding-0.6B`, `multilingual-e5-large`, and `bge-m3` exceed 2GB at the default `fp32` precision. Pass `precision: 'q8'` (or `'fp16'`) to `createLocalProvider` to stay well under that:
+> ```typescript
+> const provider = createLocalProvider({
+>   model: 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
+>   precision: 'q8',
+> });
+> ```
+
+> **Prefixes:** Models marked `query` add a retrieval prefix to queries only; `query/passage` (E5 family) prefix both sides and are required for good results. The provider applies these when you pass `inputType: 'query'` or `'document'` to `embed`. To override the pooling method for a custom model, pass `pooling: 'mean' | 'cls' | 'last_token'` to `createLocalProvider`.
 
 ---
 

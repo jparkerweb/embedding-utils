@@ -9,12 +9,15 @@ import { EmbeddingUtilsError, ModelNotFoundError } from '../types';
 import { truncateDimensions } from '../math/dimensions';
 import { toFloat32 } from '../internal/vector-utils';
 import { createLRUCache } from '../storage/cache';
+import { getModelInfo } from '../models/manager';
+
+type PoolingMethod = 'mean' | 'cls' | 'last_token';
 
 const DEFAULT_MODEL = 'Xenova/all-MiniLM-L12-v2';
 
 /** Minimal interface for the @huggingface/transformers pipeline function result. */
 interface FeatureExtractionPipeline {
-  (inputs: string[], options?: { pooling?: string; normalize?: boolean }): Promise<{
+  (inputs: string[], options?: { pooling?: PoolingMethod; normalize?: boolean }): Promise<{
     tolist(): number[][];
   }>;
 }
@@ -29,8 +32,14 @@ interface FeatureExtractionPipeline {
  */
 export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProvider {
   const model = config?.model ?? DEFAULT_MODEL;
-  const documentPrefix = config?.documentPrefix ?? '';
-  const queryPrefix = config?.queryPrefix ?? '';
+  // Resolve pooling and prefixes from explicit config first, then the model's
+  // registry metadata, then sensible defaults. Pooling especially must match
+  // how the model was trained (e.g. BGE/mxbai use 'cls') or embeddings are
+  // silently wrong; asymmetric models (E5, BGE) need their prefixes applied.
+  const registryInfo = getModelInfo(model);
+  const documentPrefix = config?.documentPrefix ?? registryInfo?.prefixes?.document ?? '';
+  const queryPrefix = config?.queryPrefix ?? registryInfo?.prefixes?.query ?? '';
+  const pooling: PoolingMethod = config?.pooling ?? registryInfo?.pooling ?? 'mean';
 
   let pipelineInstance: FeatureExtractionPipeline | null = null;
   let pipelinePromise: Promise<FeatureExtractionPipeline> | null = null;
@@ -114,7 +123,7 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
       }
 
       const pipe = await getPipeline();
-      const output = await pipe(prefixedInputs, { pooling: 'mean', normalize: true });
+      const output = await pipe(prefixedInputs, { pooling, normalize: true });
       let embeddings: Float32Array[] = output.tolist().map(toFloat32);
 
       // Cache the raw embeddings

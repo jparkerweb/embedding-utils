@@ -22,6 +22,7 @@ export const MODEL_REGISTRY: Record<string, ModelInfo> = {
     maxTokens: 512,
     description: 'BGE small English embedding model',
     size: '33M',
+    pooling: 'cls',
     prefixes: {
       document: '',
       query: 'Represent this sentence for searching relevant passages: ',
@@ -33,6 +34,7 @@ export const MODEL_REGISTRY: Record<string, ModelInfo> = {
     maxTokens: 512,
     description: 'BGE base English embedding model',
     size: '109M',
+    pooling: 'cls',
     prefixes: {
       document: '',
       query: 'Represent this sentence for searching relevant passages: ',
@@ -69,6 +71,221 @@ export const MODEL_REGISTRY: Record<string, ModelInfo> = {
     maxTokens: 512,
     description: 'Distilled RoBERTa base model for general text embeddings',
     size: '82M',
+  },
+
+  // ── GTE (Alibaba) — mean pooling, no prefixes ───────────────────────────────
+  'Xenova/gte-small': {
+    id: 'Xenova/gte-small',
+    dimensions: 384,
+    maxTokens: 512,
+    description: 'GTE small English embedding model, strong quality for its size',
+    size: '33M',
+    pooling: 'mean',
+  },
+  'Xenova/gte-base': {
+    id: 'Xenova/gte-base',
+    dimensions: 768,
+    maxTokens: 512,
+    description: 'GTE base English embedding model',
+    size: '109M',
+    pooling: 'mean',
+  },
+  'Xenova/gte-large': {
+    id: 'Xenova/gte-large',
+    dimensions: 1024,
+    maxTokens: 512,
+    description: 'GTE large English embedding model, high quality',
+    size: '335M',
+    pooling: 'mean',
+  },
+  'onnx-community/gte-multilingual-base': {
+    id: 'onnx-community/gte-multilingual-base',
+    dimensions: 768,
+    maxTokens: 8192,
+    description:
+      'GTE multilingual base (70+ languages), long-context, Matryoshka-truncatable',
+    size: '305M',
+    pooling: 'cls',
+  },
+
+  // ── Jina v2 — long-context (8192 via ALiBi), mean pooling, no prefixes ───────
+  'Xenova/jina-embeddings-v2-small-en': {
+    id: 'Xenova/jina-embeddings-v2-small-en',
+    dimensions: 512,
+    maxTokens: 8192,
+    description: 'Jina v2 small English embedding model, 8K context',
+    size: '33M',
+    pooling: 'mean',
+  },
+  'Xenova/jina-embeddings-v2-base-en': {
+    id: 'Xenova/jina-embeddings-v2-base-en',
+    dimensions: 768,
+    maxTokens: 8192,
+    description: 'Jina v2 base English embedding model, 8K context',
+    size: '137M',
+    pooling: 'mean',
+  },
+
+  // ── E5 (intfloat) — mean pooling, REQUIRE query:/passage: prefixes ───────────
+  'Xenova/e5-small-v2': {
+    id: 'Xenova/e5-small-v2',
+    dimensions: 384,
+    maxTokens: 512,
+    description: 'E5 small v2 English embedding model',
+    size: '33M',
+    pooling: 'mean',
+    prefixes: {
+      document: 'passage: ',
+      query: 'query: ',
+    },
+  },
+  'Xenova/e5-base-v2': {
+    id: 'Xenova/e5-base-v2',
+    dimensions: 768,
+    maxTokens: 512,
+    description: 'E5 base v2 English embedding model',
+    size: '109M',
+    pooling: 'mean',
+    prefixes: {
+      document: 'passage: ',
+      query: 'query: ',
+    },
+  },
+  'Xenova/e5-large-v2': {
+    id: 'Xenova/e5-large-v2',
+    dimensions: 1024,
+    maxTokens: 512,
+    description: 'E5 large v2 English embedding model',
+    size: '335M',
+    pooling: 'mean',
+    prefixes: {
+      document: 'passage: ',
+      query: 'query: ',
+    },
+  },
+
+  // ── Multilingual ────────────────────────────────────────────────────────────
+  'Xenova/paraphrase-multilingual-MiniLM-L12-v2': {
+    id: 'Xenova/paraphrase-multilingual-MiniLM-L12-v2',
+    dimensions: 384,
+    maxTokens: 128,
+    description: 'Paraphrase multilingual MiniLM (~50 languages)',
+    size: '118M',
+    pooling: 'mean',
+  },
+  'Xenova/multilingual-e5-small': {
+    id: 'Xenova/multilingual-e5-small',
+    dimensions: 384,
+    maxTokens: 512,
+    description: 'Multilingual E5 small (100+ languages); requires query:/passage: prefixes',
+    size: '118M',
+    pooling: 'mean',
+    prefixes: {
+      document: 'passage: ',
+      query: 'query: ',
+    },
+  },
+  'Xenova/multilingual-e5-base': {
+    id: 'Xenova/multilingual-e5-base',
+    dimensions: 768,
+    maxTokens: 512,
+    description: 'Multilingual E5 base (100+ languages); requires query:/passage: prefixes',
+    size: '278M',
+    pooling: 'mean',
+    prefixes: {
+      document: 'passage: ',
+      query: 'query: ',
+    },
+  },
+  'Xenova/multilingual-e5-large': {
+    id: 'Xenova/multilingual-e5-large',
+    dimensions: 1024,
+    maxTokens: 512,
+    description:
+      'Multilingual E5 large (100+ languages); requires query:/passage: prefixes. Use precision q8/fp16 — fp32 exceeds 2GB',
+    size: '560M',
+    pooling: 'mean',
+    prefixes: {
+      document: 'passage: ',
+      query: 'query: ',
+    },
+  },
+
+  // ── BGE large + M3 ──────────────────────────────────────────────────────────
+  'Xenova/bge-large-en-v1.5': {
+    id: 'Xenova/bge-large-en-v1.5',
+    dimensions: 1024,
+    maxTokens: 512,
+    description: 'BGE large English embedding model',
+    size: '335M',
+    pooling: 'cls',
+    prefixes: {
+      document: '',
+      query: 'Represent this sentence for searching relevant passages: ',
+    },
+  },
+  'Xenova/bge-m3': {
+    id: 'Xenova/bge-m3',
+    dimensions: 1024,
+    maxTokens: 8192,
+    description:
+      'BGE-M3 multilingual long-context model (100+ languages). Use precision q8/fp16 — fp32 exceeds 2GB',
+    size: '568M',
+    pooling: 'cls',
+  },
+
+  // ── mxbai + Snowflake Arctic — CLS pooling ──────────────────────────────────
+  'mixedbread-ai/mxbai-embed-large-v1': {
+    id: 'mixedbread-ai/mxbai-embed-large-v1',
+    dimensions: 1024,
+    maxTokens: 512,
+    description: 'mxbai-embed-large v1, top-tier English (Matryoshka-truncatable)',
+    size: '335M',
+    pooling: 'cls',
+    prefixes: {
+      document: '',
+      query: 'Represent this sentence for searching relevant passages: ',
+    },
+  },
+  'Snowflake/snowflake-arctic-embed-m-v1.5': {
+    id: 'Snowflake/snowflake-arctic-embed-m-v1.5',
+    dimensions: 768,
+    maxTokens: 512,
+    description: 'Snowflake Arctic Embed medium v1.5 (Matryoshka-truncatable to 256)',
+    size: '109M',
+    pooling: 'cls',
+    prefixes: {
+      document: '',
+      query: 'Represent this sentence for searching relevant passages: ',
+    },
+  },
+  'Snowflake/snowflake-arctic-embed-l': {
+    id: 'Snowflake/snowflake-arctic-embed-l',
+    dimensions: 1024,
+    maxTokens: 512,
+    description: 'Snowflake Arctic Embed large, strong retrieval quality',
+    size: '335M',
+    pooling: 'cls',
+    prefixes: {
+      document: '',
+      query: 'Represent this sentence for searching relevant passages: ',
+    },
+  },
+
+  // ── Qwen3 — last-token pooling, 32K context. fp32 > 2GB: use q8/fp16 ─────────
+  'onnx-community/Qwen3-Embedding-0.6B-ONNX': {
+    id: 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    dimensions: 1024,
+    maxTokens: 32768,
+    description:
+      'Qwen3-Embedding 0.6B, instruction-aware, 32K context. Use precision q8/fp16 — fp32 exceeds 2GB',
+    size: '595M',
+    pooling: 'last_token',
+    prefixes: {
+      document: '',
+      query:
+        'Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:',
+    },
   },
 };
 
@@ -117,7 +334,7 @@ export function getRecommendedModel(
     case 'balanced':
       return MODEL_REGISTRY['Xenova/all-mpnet-base-v2'];
     case 'quality':
-      return MODEL_REGISTRY['Xenova/all-mpnet-base-v2'];
+      return MODEL_REGISTRY['Xenova/bge-large-en-v1.5'];
     case 'multilingual':
       return MODEL_REGISTRY['Xenova/multilingual-MiniLM-L12-v2'];
   }

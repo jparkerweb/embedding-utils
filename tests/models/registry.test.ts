@@ -67,9 +67,9 @@ describe('getRecommendedModel', () => {
     expect(model.id).toBe('Xenova/all-mpnet-base-v2');
   });
 
-  it('returns all-mpnet-base-v2 for quality', () => {
+  it('returns bge-large-en-v1.5 for quality', () => {
     const model = getRecommendedModel('quality');
-    expect(model.id).toBe('Xenova/all-mpnet-base-v2');
+    expect(model.id).toBe('Xenova/bge-large-en-v1.5');
   });
 
   it('returns multilingual-MiniLM-L12-v2 for multilingual', () => {
@@ -95,5 +95,21 @@ describe('MODEL_REGISTRY completeness', () => {
     expect(MODEL_REGISTRY['Xenova/multilingual-MiniLM-L12-v2'].dimensions).toBe(384);
     expect(MODEL_REGISTRY['nomic-ai/nomic-embed-text-v1.5'].dimensions).toBe(768);
     expect(MODEL_REGISTRY['Xenova/distilroberta-base'].dimensions).toBe(768);
+  });
+
+  it('all pooling fields, when set, are valid methods', () => {
+    const valid = new Set(['mean', 'cls', 'last_token']);
+    for (const [id, model] of Object.entries(MODEL_REGISTRY)) {
+      if (model.pooling !== undefined) {
+        expect(valid.has(model.pooling), `${id} has invalid pooling`).toBe(true);
+      }
+    }
+  });
+
+  it('BGE family uses cls pooling (training-matched)', () => {
+    expect(MODEL_REGISTRY['Xenova/bge-small-en-v1.5'].pooling).toBe('cls');
+    expect(MODEL_REGISTRY['Xenova/bge-base-en-v1.5'].pooling).toBe('cls');
+    expect(MODEL_REGISTRY['Xenova/bge-large-en-v1.5'].pooling).toBe('cls');
+    expect(MODEL_REGISTRY['Xenova/bge-m3'].pooling).toBe('cls');
   });
 });
