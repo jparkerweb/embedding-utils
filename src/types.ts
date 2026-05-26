@@ -517,13 +517,24 @@ export interface LocalProviderConfig {
    * Text prefix prepended to inputs when `inputType` is 'document'.
    * Some models (e.g., nomic-embed, BGE) use prefixes to distinguish
    * between document and query embeddings for asymmetric search.
+   * Overrides the model's registry prefix when set; otherwise the registry
+   * default (if any) is used.
    */
   documentPrefix?: string;
   /**
    * Text prefix prepended to inputs when `inputType` is 'query'.
    * Example: 'Represent this sentence for searching relevant passages: '
+   * Overrides the model's registry prefix when set; otherwise the registry
+   * default (if any) is used.
    */
   queryPrefix?: string;
+  /**
+   * Token pooling method. Overrides the model's registry default. Most
+   * sentence-transformer models use 'mean'; BGE-M3, mxbai, and Snowflake
+   * Arctic use 'cls'; Qwen3-Embedding uses 'last_token'. Default: resolved
+   * from the registry, falling back to 'mean'.
+   */
+  pooling?: 'mean' | 'cls' | 'last_token';
 }
 
 /**
@@ -707,6 +718,14 @@ export interface ModelInfo {
   description: string;
   /** Approximate model size (e.g., '33M', '109M'). */
   size?: string;
+  /**
+   * Token pooling method the model was trained with. The local provider uses
+   * this to pool token embeddings into a single vector. Defaults to 'mean'
+   * when omitted. Use 'cls' for BGE-M3/mxbai/Snowflake Arctic and
+   * 'last_token' for Qwen3-Embedding — using the wrong method produces
+   * incorrect embeddings.
+   */
+  pooling?: 'mean' | 'cls' | 'last_token';
   /**
    * Text prefixes for asymmetric embedding models. When set, the local
    * provider automatically prepends these based on the `inputType` option.

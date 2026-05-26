@@ -92,6 +92,91 @@ describe('createLocalProvider', () => {
     );
   });
 
+  it('should default to mean pooling for models without a registry pooling field', async () => {
+    mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
+    const provider = createLocalProvider();
+
+    await provider.embed('test');
+
+    expect(mockPipelineFn).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ pooling: 'mean', normalize: true }),
+    );
+  });
+
+  it('should resolve pooling from the registry (cls for BGE)', async () => {
+    mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
+    const provider = createLocalProvider({ model: 'Xenova/bge-large-en-v1.5' });
+
+    await provider.embed('test');
+
+    expect(mockPipelineFn).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ pooling: 'cls' }),
+    );
+  });
+
+  it('should resolve last_token pooling from the registry (Qwen3)', async () => {
+    mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
+    const provider = createLocalProvider({
+      model: 'onnx-community/Qwen3-Embedding-0.6B-ONNX',
+    });
+
+    await provider.embed('test');
+
+    expect(mockPipelineFn).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ pooling: 'last_token' }),
+    );
+  });
+
+  it('should let config pooling override the registry default', async () => {
+    mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
+    const provider = createLocalProvider({
+      model: 'Xenova/bge-large-en-v1.5',
+      pooling: 'mean',
+    });
+
+    await provider.embed('test');
+
+    expect(mockPipelineFn).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ pooling: 'mean' }),
+    );
+  });
+
+  it('should apply registry prefixes by inputType (E5 query/passage)', async () => {
+    mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
+    const provider = createLocalProvider({ model: 'Xenova/e5-base-v2' });
+
+    await provider.embed('hello', { inputType: 'query' });
+    expect(mockPipelineFn).toHaveBeenLastCalledWith(
+      ['query: hello'],
+      expect.any(Object),
+    );
+
+    await provider.embed('world', { inputType: 'document' });
+    expect(mockPipelineFn).toHaveBeenLastCalledWith(
+      ['passage: world'],
+      expect.any(Object),
+    );
+  });
+
+  it('should let config prefixes override registry prefixes', async () => {
+    mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
+    const provider = createLocalProvider({
+      model: 'Xenova/e5-base-v2',
+      queryPrefix: 'custom: ',
+    });
+
+    await provider.embed('hello', { inputType: 'query' });
+
+    expect(mockPipelineFn).toHaveBeenCalledWith(
+      ['custom: hello'],
+      expect.any(Object),
+    );
+  });
+
   it('should use default model Xenova/all-MiniLM-L12-v2', async () => {
     mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
     const provider = createLocalProvider();
