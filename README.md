@@ -21,6 +21,7 @@ Build semantic search, RAG pipelines, recommendation engines, duplicate detectio
 - [Why embedding-utils?](#why-embedding-utils)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Local inference setup](#local-inference-setup)
 - [Providers](#providers)
 - [API Reference](#api-reference)
   - [Vector Math](#vector-math)
@@ -111,6 +112,86 @@ import { createLocalProvider, topK } from 'embedding-utils';
 const provider = createLocalProvider(); // uses Xenova/all-MiniLM-L12-v2 by default
 const { embeddings } = await provider.embed(['hello world', 'goodbye world']);
 ```
+
+---
+
+## Local inference setup
+
+Local (ONNX) inference runs entirely on your machine -- no API key, no network round-trips at query time. It is powered by [`@huggingface/transformers`](https://www.npmjs.com/package/@huggingface/transformers), which is an **optional peer dependency**: install it only if you use `createLocalProvider` or `createTokenizer`.
+
+```bash
+npm install embedding-utils @huggingface/transformers
+```
+
+If `@huggingface/transformers` is missing, `createLocalProvider().embed(...)` and `createTokenizer(...).load()` throw `ModelNotFoundError` with install instructions.
+
+### `createLocalProvider` configuration
+
+`createLocalProvider(config?)` accepts a `LocalProviderConfig`. All fields are optional:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `model` | `string` | `'Xenova/all-MiniLM-L12-v2'` | HuggingFace model id (see the [model registry](#built-in-model-registry)). |
+| `precision` | `'fp32' \| 'fp16' \| 'q8' \| 'q4'` | `'fp32'` | Model weight precision (maps to transformers' `dtype`). Lower precision = smaller download and memory. `'q4'` (int4) is the most aggressive. |
+| `device` | `string` | transformers' default | Execution provider, e.g. `'cpu'` or `'webgpu'`. |
+| `modelPath` | `string` | -- | Path to a local model directory (sets `env.localModelPath`). |
+| `cacheDir` | `string` | `~/.cache/huggingface/hub` | Directory for cached downloads (sets `env.cacheDir`). |
+| `allowRemoteModels` | `boolean` | `true` | Whether to allow downloading models from the HuggingFace Hub (sets `env.allowRemoteModels`). Set `false` for fully offline / air-gapped runs. |
+| `pooling` | `'mean' \| 'cls' \| 'last_token'` | model registry default | Override the token pooling method. |
+| `documentPrefix` / `queryPrefix` | `string` | model registry default | Override the prefixes applied for `inputType: 'document' \| 'query'`. |
+| `cache` | `CacheOptions` | `{ maxSize: 1000 }` | Internal LRU cache config. |
+
+```typescript
+import { createLocalProvider } from 'embedding-utils';
+
+const provider = createLocalProvider({
+  model: 'Xenova/all-MiniLM-L6-v2',
+  precision: 'q4',            // smaller / faster (now supported)
+  device: 'webgpu',           // omitted from pipeline options automatically (webgpu-guarded)
+  modelPath: '/srv/models',   // honored: load from a local directory
+  cacheDir: '/srv/hf-cache',  // honored: where downloads are cached
+  allowRemoteModels: false,   // honored: fully offline, never hit the Hub
+});
+
+const { embeddings } = await provider.embed(['hello world', 'goodbye world']);
+```
+
+> **`modelPath` / `cacheDir` / `allowRemoteModels` are now honored.** Prior versions declared these fields but ignored them; they are now applied to the transformers environment. For `device`, the value is forwarded to the pipeline for non-`'webgpu'` providers and intentionally omitted when set to `'webgpu'` (passing it breaks WebGPU init).
+
+> **Caching:** the local provider caches per input text, so repeated or overlapping texts hit the cache across separate `embed` calls. Embedding an empty array returns `{ embeddings: [], dimensions: 0 }`.
+
+### Exact token counting -- `createTokenizer`
+
+`createTokenizer(model, opts?)` returns a `LocalTokenizer` that gives **exact** token counts using the model's real tokenizer -- not the ~1.3-tokens/word heuristic used by the text-chunking helpers. Counting is synchronous after `load()`, so it can be called inline in hot loops (e.g. while chunking).
+
+```typescript
+import { createTokenizer } from 'embedding-utils';
+
+const tokenizer = createTokenizer('Xenova/all-MiniLM-L6-v2', {
+  // all optional:
+  modelPath: '/srv/models',
+  cacheDir: '/srv/hf-cache',
+  allowRemoteModels: true,
+});
+
+await tokenizer.load(); // idempotent — call once before counting
+
+tokenizer.count('hello world');          // => exact token count (number)
+tokenizer.countBatch(['a', 'b c d']);    // => [number, number]
+
+tokenizer.maxTokens;  // model's max input tokens from the registry (0 if unknown)
+tokenizer.modelId;    // the model id this tokenizer was created for
+```
+
+| Member | Signature | Description |
+|--------|-----------|-------------|
+| `load` | `() => Promise<void>` | Loads the tokenizer. Idempotent -- subsequent calls are no-ops. |
+| `count` | `(text: string) => number` | Unpadded token count matching transformers' `input_ids.size`. Synchronous. |
+| `countBatch` | `(texts: string[]) => number[]` | Element-wise `count` over an array. Synchronous. |
+| `maxTokens` | `readonly number` | Model's max input token count from the registry (0 if unknown). |
+| `modelId` | `readonly string` | Model id this tokenizer was created for. |
+
+`count` / `countBatch` throw `EmbeddingUtilsError` if called before `load()` completes. `load()` throws `ModelNotFoundError` if `@huggingface/transformers` is not installed.
 
 ---
 
@@ -1446,6 +1527,7 @@ console.log(results.map(r => r.id)); // => ['3', '1']
 | `chunkBySentence(text, opts?)` | Split on sentence boundaries |
 | `chunkByStructure(text, opts?)` | Markdown-aware chunking with heading metadata |
 | `getTokenizerInfo(model)` | Get model tokenizer info |
+| `createTokenizer(model, opts?)` | Exact token counter (load/count/countBatch/maxTokens/modelId) |
 
 ### Store
 

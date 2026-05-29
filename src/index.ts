@@ -27,6 +27,8 @@ export type {
   SerializationMetadata,
   EmbeddingStoreConfig,
   TokenizerInfo,
+  CreateTokenizerOptions,
+  LocalTokenizer,
   RankedItem,
   NormalizationMethod,
   StructuredChunk,
@@ -150,7 +152,7 @@ export { recallAtK, ndcg, mrr, meanAveragePrecision } from './eval/index';
 export { createEmbeddingPipeline, TokenBucketRateLimiter } from './pipeline/index';
 
 export { chunkByTokenCount, chunkBySentence, chunkByStructure } from './text/index';
-export { getTokenizerInfo } from './text/index';
+export { getTokenizerInfo, createTokenizer } from './text/index';
 export { createEmbeddingStore } from './store/index';
 export type { EmbeddingStore } from './store/embedding-store';
 

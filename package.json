@@ -1,6 +1,6 @@
 {
   "name": "embedding-utils",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Lightweight, provider-agnostic embedding utilities for Node.js",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -48,6 +48,7 @@
   "homepage": "https://github.com/jparkerweb/embedding-utils#readme",
   "scripts": {
     "build": "tsup",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",

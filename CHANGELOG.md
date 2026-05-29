@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0] - 2026-05-28
+
+### New Features
+
+- **Exact token counting (`createTokenizer`):** New standalone `createTokenizer(model, opts?)` factory backed by a model's `@huggingface/transformers` tokenizer. Returns a `LocalTokenizer` with an idempotent `load()`, synchronous `count(text)` / `countBatch(texts)` (matching transformers' unpadded `input_ids.size`), and `readonly maxTokens` / `modelId`. Counting is synchronous after `load()`, so it can be used inline in hot loops. Calling `count`/`countBatch` before `load()` throws `EmbeddingUtilsError`; a missing `@huggingface/transformers` peer throws `ModelNotFoundError` from `load()`.
+- **`device` option for the local provider:** `LocalProviderConfig.device` selects the transformers execution provider (e.g. `'cpu'` / `'webgpu'`). It is passed through to the pipeline for non-`'webgpu'` values and intentionally omitted for `'webgpu'` (passing it breaks WebGPU initialization).
+- **`q4` precision:** `LocalProviderConfig.precision` now also accepts `'q4'` (int4 quantized) in addition to `'fp32'` / `'fp16'` / `'q8'`.
+
+### Fixed
+
+- **Now-honored local provider config:** `modelPath`, `cacheDir`, and `allowRemoteModels` were declared on `LocalProviderConfig` but ignored. `createLocalProvider` now applies them to the transformers environment (`env.localModelPath`, `env.cacheDir`, `env.allowRemoteModels`) so callers can point at local models / custom caches and toggle remote downloads.
+- **Per-input embedding cache:** The local provider's cache is now keyed per input text (`` `${model}:${dimensions}:${text}` ``) instead of per whole batch, so repeated or overlapping texts hit the cache across batches and only cache misses run the pipeline.
+- **Empty-input guard:** `createLocalProvider().embed([])` now returns `{ embeddings: [], model, dimensions: 0 }` instead of throwing on an empty input array.
+
+### Notes
+
+- All changes are additive; the 0.4.0 public surface is unchanged.
+
 ## [0.4.0] - 2026-05-25
 
 ### New Features

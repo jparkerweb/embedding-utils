@@ -7,6 +7,7 @@ const mockPipeline = vi.fn();
 
 vi.mock('@huggingface/transformers', () => ({
   pipeline: mockPipeline,
+  env: {},
 }));
 
 describe('createLocalProvider', () => {

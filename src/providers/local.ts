@@ -17,7 +17,10 @@ const DEFAULT_MODEL = 'Xenova/all-MiniLM-L12-v2';
 
 /** Minimal interface for the @huggingface/transformers pipeline function result. */
 interface FeatureExtractionPipeline {
-  (inputs: string[], options?: { pooling?: PoolingMethod; normalize?: boolean }): Promise<{
+  (
+    inputs: string[],
+    options?: { pooling?: PoolingMethod; normalize?: boolean }
+  ): Promise<{
     tolist(): number[][];
   }>;
 }
@@ -52,9 +55,34 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
     pipelinePromise = (async () => {
       try {
         const transformers = await import('@huggingface/transformers');
-        const pipe = await transformers.pipeline('feature-extraction', model, {
+
+        // Honor the advertised environment config. Previously these declared
+        // LocalProviderConfig fields were ignored (latent bug); wiring them
+        // here lets callers point transformers at local models / custom caches
+        // and toggle remote downloads.
+        transformers.env.allowRemoteModels = config?.allowRemoteModels ?? true;
+        if (config?.modelPath) {
+          transformers.env.localModelPath = config.modelPath;
+        }
+        if (config?.cacheDir) {
+          transformers.env.cacheDir = config.cacheDir;
+        }
+
+        // Build pipeline options. precision maps to dtype (now incl. 'q4').
+        // device is only passed for non-webgpu providers, mirroring
+        // semantic-chunking's guard — passing device for 'webgpu' breaks it.
+        const pipelineOptions: Record<string, unknown> = {
           dtype: config?.precision ?? 'fp32',
-        });
+        };
+        if (config?.device && config.device !== 'webgpu') {
+          pipelineOptions.device = config.device;
+        }
+
+        const pipe = await transformers.pipeline(
+          'feature-extraction',
+          model,
+          pipelineOptions as Parameters<typeof transformers.pipeline>[2]
+        );
         pipelineInstance = pipe as unknown as FeatureExtractionPipeline;
         return pipelineInstance;
       } catch (error: unknown) {
@@ -68,7 +96,7 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
         ) {
           throw new ModelNotFoundError(
             '@huggingface/transformers is not installed. ' +
-              'Install it with: npm install @huggingface/transformers',
+              'Install it with: npm install @huggingface/transformers'
           );
         }
         throw error;
@@ -78,23 +106,32 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
     return pipelinePromise;
   }
 
-  function getCacheKey(inputs: string[], dimensions?: number): string {
-    return model + ':' + (dimensions ?? '') + ':' + JSON.stringify(inputs);
+  // Per-input cache key: keyed on the prefixed text so repeated/overlapping
+  // texts hit the cache regardless of which batch they arrive in.
+  function getCacheKey(text: string, dimensions?: number): string {
+    return `${model}:${dimensions ?? ''}:${text}`;
   }
 
   return {
     name: 'local',
     dimensions: null,
 
-    async embed(
-      input: string | string[],
-      options?: EmbedOptions,
-    ): Promise<EmbeddingResult> {
+    async embed(input: string | string[], options?: EmbedOptions): Promise<EmbeddingResult> {
       if (options?.signal?.aborted) {
         throw new EmbeddingUtilsError('Aborted');
       }
 
       const inputs = Array.isArray(input) ? input : [input];
+
+      // Empty-input guard: bail before any cache/pipeline work so we never
+      // dereference embeddings[0] on an empty result.
+      if (inputs.length === 0) {
+        return {
+          embeddings: [],
+          model,
+          dimensions: 0,
+        };
+      }
 
       // Apply prefixes based on inputType
       const prefixedInputs = inputs.map((text) => {
@@ -107,29 +144,44 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
         return text;
       });
 
-      // Check cache
-      const cacheKey = getCacheKey(prefixedInputs, options?.dimensions);
-      const cached = await cache.get(cacheKey);
-      if (cached) {
-        let embeddings = cached;
-        if (options?.dimensions) {
-          embeddings = truncateDimensions(embeddings, options.dimensions);
+      // Per-input cache lookup. Each prefixed text is keyed individually so
+      // repeated/overlapping texts (within or across batches) hit the cache.
+      // Raw (untruncated) embeddings are stored as single-element arrays.
+      const results: (Float32Array | undefined)[] = new Array(prefixedInputs.length);
+      const missTexts: string[] = [];
+      const missIndices: number[] = [];
+
+      for (let i = 0; i < prefixedInputs.length; i++) {
+        const key = getCacheKey(prefixedInputs[i], options?.dimensions);
+        const cached = await cache.get(key);
+        if (cached && cached.length > 0) {
+          results[i] = cached[0];
+        } else {
+          missTexts.push(prefixedInputs[i]);
+          missIndices.push(i);
         }
-        return {
-          embeddings,
-          model,
-          dimensions: embeddings[0].length,
-        };
       }
 
-      const pipe = await getPipeline();
-      const output = await pipe(prefixedInputs, { pooling, normalize: true });
-      let embeddings: Float32Array[] = output.tolist().map(toFloat32);
+      // Only run the pipeline on cache misses.
+      if (missTexts.length > 0) {
+        const pipe = await getPipeline();
+        const output = await pipe(missTexts, { pooling, normalize: true });
+        const missEmbeddings: Float32Array[] = output.tolist().map(toFloat32);
 
-      // Cache the raw embeddings
-      await cache.set(cacheKey, embeddings);
+        for (let j = 0; j < missIndices.length; j++) {
+          const originalIndex = missIndices[j];
+          const embedding = missEmbeddings[j];
+          results[originalIndex] = embedding;
+          // Store each raw embedding under its own per-text key.
+          const key = getCacheKey(prefixedInputs[originalIndex], options?.dimensions);
+          await cache.set(key, [embedding]);
+        }
+      }
 
-      // Truncate if requested
+      // Reassemble in original input order.
+      let embeddings: Float32Array[] = results as Float32Array[];
+
+      // Truncate if requested.
       if (options?.dimensions) {
         embeddings = truncateDimensions(embeddings, options.dimensions);
       }

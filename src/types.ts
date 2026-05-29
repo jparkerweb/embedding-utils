@@ -500,8 +500,10 @@ export interface RetryConfig {
 export interface LocalProviderConfig {
   /** HuggingFace model identifier. Default: 'Xenova/all-MiniLM-L12-v2'. */
   model?: string;
-  /** Model precision: 'fp32' (default), 'fp16', or 'q8' (int8 quantized). */
-  precision?: 'fp32' | 'fp16' | 'q8';
+  /** Model precision: 'fp32' (default), 'fp16', 'q8' (int8 quantized), or 'q4' (int4 quantized). */
+  precision?: 'fp32' | 'fp16' | 'q8' | 'q4';
+  /** Transformers execution provider, e.g. 'cpu' / 'webgpu'. Default: transformers' own default. */
+  device?: string;
   /** Custom path to a local model directory. */
   modelPath?: string;
   /** Directory for caching downloaded models. Default: ~/.cache/huggingface/hub */
@@ -705,6 +707,40 @@ export interface TokenizerInfo {
   maxTokens: number;
   /** Model identifier from the registry. */
   modelId: string;
+}
+
+/**
+ * Options passed to {@link createTokenizer} to control how the underlying
+ * @huggingface/transformers tokenizer is loaded.
+ */
+export interface CreateTokenizerOptions {
+  /** Custom path to a local model directory. Maps to transformers' `env.localModelPath`. */
+  modelPath?: string;
+  /** Directory for caching downloaded models. Maps to transformers' `env.cacheDir`. */
+  cacheDir?: string;
+  /** Whether to allow downloading models from HuggingFace Hub. Default: true. */
+  allowRemoteModels?: boolean;
+}
+
+/**
+ * Exact token counter backed by a model's @huggingface/transformers tokenizer,
+ * created by {@link createTokenizer}.
+ *
+ * Call {@link LocalTokenizer.load} once (it is idempotent) before invoking the
+ * synchronous {@link LocalTokenizer.count} / {@link LocalTokenizer.countBatch}
+ * methods, which can then be used inline in hot loops.
+ */
+export interface LocalTokenizer {
+  /** Loads the underlying tokenizer. Idempotent: subsequent calls are no-ops. */
+  load(): Promise<void>;
+  /** Returns the unpadded token count for a single text. Requires {@link load} to have completed. */
+  count(text: string): number;
+  /** Returns the unpadded token count for each text. Requires {@link load} to have completed. */
+  countBatch(texts: string[]): number[];
+  /** Maximum input token count supported by the model (0 if unknown). */
+  readonly maxTokens: number;
+  /** Model identifier this tokenizer was created for. */
+  readonly modelId: string;
 }
 
 export interface ModelInfo {
