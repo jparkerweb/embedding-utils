@@ -1,6 +1,7 @@
 import type { TokenizerInfo, CreateTokenizerOptions, LocalTokenizer } from '../types';
 import { EmbeddingUtilsError, ModelNotFoundError } from '../types';
 import { MODEL_REGISTRY } from '../models/registry';
+import { createInstanceRegistry } from '../internal/instance-registry';
 
 /**
  * Looks up tokenizer information for a model in the built-in registry.
@@ -20,6 +21,37 @@ export function getTokenizerInfo(model: string): TokenizerInfo | undefined {
 /** Minimal interface for a loaded @huggingface/transformers tokenizer instance. */
 interface TokenizerInstance {
   (text: string): { input_ids: { size: number } };
+}
+
+/**
+ * Process-level registry of loaded tokenizer instances, keyed by everything
+ * that affects tokenizer loading. `AutoTokenizer.from_pretrained` re-parses
+ * the tokenizer files on every call (~350ms for typical sentence-transformer
+ * models) — sharing the loaded instance makes repeated `createTokenizer` +
+ * `load()` cycles effectively free. Tokenizers are stateless pure-JS objects,
+ * so sharing is safe and there is nothing native to dispose.
+ */
+const MAX_SHARED_TOKENIZERS = 8;
+const tokenizerRegistry = createInstanceRegistry<TokenizerInstance>(MAX_SHARED_TOKENIZERS);
+
+function tokenizerKey(model: string, opts?: CreateTokenizerOptions): string {
+  return JSON.stringify([
+    model,
+    opts?.modelPath ?? '',
+    opts?.cacheDir ?? '',
+    opts?.allowRemoteModels ?? true,
+  ]);
+}
+
+/**
+ * Empties the process-level tokenizer registry. Tokenizers already handed to
+ * callers keep working (they are plain JS objects); this only releases the
+ * registry's references so subsequent `load()` calls parse fresh instances.
+ * Mainly useful in tests.
+ */
+export function disposeLocalTokenizers(): void {
+  // Fire-and-forget: nothing native to dispose, just drop the references.
+  void tokenizerRegistry.clear();
 }
 
 /**
@@ -56,6 +88,39 @@ export function createTokenizer(model: string, opts?: CreateTokenizerOptions): L
     return instance;
   }
 
+  async function buildTokenizer(): Promise<TokenizerInstance> {
+    try {
+      const transformers = await import('@huggingface/transformers');
+      transformers.env.allowRemoteModels = opts?.allowRemoteModels ?? true;
+      if (opts?.modelPath) {
+        transformers.env.localModelPath = opts.modelPath;
+      }
+      if (opts?.cacheDir) {
+        transformers.env.cacheDir = opts.cacheDir;
+      }
+      const tokenizer = await transformers.AutoTokenizer.from_pretrained(model);
+      return tokenizer as unknown as TokenizerInstance;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : null;
+      const code = (error as { code?: string })?.code;
+      if (
+        code === 'ERR_MODULE_NOT_FOUND' ||
+        code === 'MODULE_NOT_FOUND' ||
+        err?.message?.includes('Cannot find module')
+      ) {
+        throw new ModelNotFoundError(
+          '@huggingface/transformers is not installed. ' +
+            'Install it with: npm install @huggingface/transformers'
+        );
+      }
+      throw error;
+    }
+  }
+
+  // Shared path (default): one loaded tokenizer per unique config for the
+  // whole process. Opt-out with `reuse: false` for a private instance.
+  const reuse = opts?.reuse ?? true;
+
   return {
     maxTokens,
     modelId: model,
@@ -66,30 +131,11 @@ export function createTokenizer(model: string, opts?: CreateTokenizerOptions): L
 
       loadPromise = (async () => {
         try {
-          const transformers = await import('@huggingface/transformers');
-          transformers.env.allowRemoteModels = opts?.allowRemoteModels ?? true;
-          if (opts?.modelPath) {
-            transformers.env.localModelPath = opts.modelPath;
-          }
-          if (opts?.cacheDir) {
-            transformers.env.cacheDir = opts.cacheDir;
-          }
-          const tokenizer = await transformers.AutoTokenizer.from_pretrained(model);
-          instance = tokenizer as unknown as TokenizerInstance;
+          instance = reuse
+            ? await tokenizerRegistry.getOrCreate(tokenizerKey(model, opts), buildTokenizer)
+            : await buildTokenizer();
         } catch (error: unknown) {
-          loadPromise = null;
-          const err = error instanceof Error ? error : null;
-          const code = (error as { code?: string })?.code;
-          if (
-            code === 'ERR_MODULE_NOT_FOUND' ||
-            code === 'MODULE_NOT_FOUND' ||
-            err?.message?.includes('Cannot find module')
-          ) {
-            throw new ModelNotFoundError(
-              '@huggingface/transformers is not installed. ' +
-                'Install it with: npm install @huggingface/transformers',
-            );
-          }
+          loadPromise = null; // allow retry after failure
           throw error;
         }
       })();

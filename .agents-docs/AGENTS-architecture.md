@@ -23,7 +23,7 @@ All public types and error classes live in a single `src/types.ts` and are re-ex
 | `storage/` | Serialize/deserialize embeddings, LRU cache (`createLRUCache`, `warmCache`). |
 | `store/` | `createEmbeddingStore` — higher-level combined embed+store+search store. |
 | `eval/` | Retrieval metrics: `recallAtK`, `ndcg`, `mrr`, `meanAveragePrecision`. |
-| `internal/` | **Non-public** shared helpers: clustering primitives, concurrency, heap, metrics, random, validation, vector-utils. Marked `@internal`; not re-exported (except a couple of low-level utils like `toFloat32`, `isVector`). |
+| `internal/` | **Non-public** shared helpers: clustering primitives, concurrency, heap, metrics, random, validation, vector-utils, instance-registry (bounded LRU registry backing pipeline/tokenizer reuse in `providers/local` and `text/tokenizer`). Marked `@internal`; not re-exported (except a couple of low-level utils like `toFloat32`, `isVector`). |
 
 ## Provider model
 

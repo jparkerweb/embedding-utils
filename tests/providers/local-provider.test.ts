@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createLocalProvider } from '../../src/providers/local';
+import { createLocalProvider, disposeLocalPipelines } from '../../src/providers/local';
 
 // Mocked transformers loader: a spy-able pipeline factory plus a mutable env
 // object so we can assert config wiring without downloading any model.
@@ -13,7 +13,9 @@ vi.mock('@huggingface/transformers', () => ({
 }));
 
 describe('createLocalProvider config wiring + per-input cache', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Empty the process-level pipeline registry so each test constructs fresh.
+    await disposeLocalPipelines();
     vi.clearAllMocks();
     mockPipelineFn.mockReset();
     mockPipeline.mockReset();

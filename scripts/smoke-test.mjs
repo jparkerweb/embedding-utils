@@ -9,6 +9,8 @@
  *   - vectors are L2-normalized (magnitude ~= 1.0, since normalize: true)
  *   - the registry `pooling` method is actually applied
  *   - asymmetric models produce different query vs document vectors (prefixes)
+ *   - a second provider with the same config reuses the shared pipeline and
+ *     produces bit-identical vectors (session reuse, v0.6.0)
  *
  * Prereqs:  npm run build   (this imports the built ./dist surface)
  * Usage:    node scripts/smoke-test.mjs [modelId ...]
@@ -20,7 +22,7 @@
  * Exit code is non-zero if any check fails, so it can gate a release.
  */
 
-import { createLocalProvider, getModelInfo } from '../dist/index.js';
+import { createLocalProvider, disposeLocalPipelines, getModelInfo } from '../dist/index.js';
 
 // Representative default set: one model per pooling method.
 // [modelId, precision]
@@ -101,6 +103,25 @@ for (const [modelId, precision] of models) {
       fail(`not normalized (magnitude = ${mag.toFixed(4)})`);
     }
 
+    // Session reuse (v0.6.0): a second provider with the same config must
+    // reuse the shared pipeline (near-instant creation) and produce
+    // bit-identical vectors for the same input.
+    const reuseStart = Date.now();
+    const provider2 = createLocalProvider(
+      precision ? { model: modelId, precision } : { model: modelId },
+    );
+    const docRes2 = await provider2.embed(DOC, { inputType: 'document' });
+    const reuseMs = Date.now() - reuseStart;
+    const docVec2 = docRes2.embeddings[0];
+    const identical =
+      docVec2.length === docVec.length &&
+      docVec2.every((v, i) => v === docVec[i]);
+    if (identical) {
+      pass(`shared-pipeline reuse: identical vectors (2nd provider embed took ${reuseMs}ms)`);
+    } else {
+      fail('shared-pipeline reuse produced different vectors');
+    }
+
     // Prefixes applied (asymmetric models): query vs document must differ.
     if (hasPrefixes) {
       const queryRes = await provider.embed(QUERY, { inputType: 'query' });
@@ -124,6 +145,8 @@ for (const [modelId, precision] of models) {
     console.log('');
   }
 }
+
+await disposeLocalPipelines();
 
 if (failures > 0) {
   console.log(`✗ ${failures} check(s) failed.`);

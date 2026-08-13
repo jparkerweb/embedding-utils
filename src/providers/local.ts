@@ -8,6 +8,7 @@ import type {
 import { EmbeddingUtilsError, ModelNotFoundError } from '../types';
 import { truncateDimensions } from '../math/dimensions';
 import { toFloat32 } from '../internal/vector-utils';
+import { createInstanceRegistry } from '../internal/instance-registry';
 import { createLRUCache } from '../storage/cache';
 import { getModelInfo } from '../models/manager';
 
@@ -23,6 +24,49 @@ interface FeatureExtractionPipeline {
   ): Promise<{
     tolist(): number[][];
   }>;
+  /** Releases the underlying ONNX session (present on transformers.js pipelines). */
+  dispose?(): Promise<void>;
+}
+
+/**
+ * Process-level registry of feature-extraction pipelines, keyed by everything
+ * that affects pipeline construction. Pipeline construction creates a native
+ * ONNX InferenceSession (~1.5s and hundreds of MB per call for typical
+ * models), and @huggingface/transformers does not cache sessions — so without
+ * this, every `createLocalProvider` call with the same config paid that cost
+ * again. Pooling and prefixes are deliberately NOT part of the key: they are
+ * per-inference arguments, so providers that differ only in pooling/prefixes
+ * can safely share one session.
+ */
+const MAX_SHARED_PIPELINES = 4;
+const pipelineRegistry = createInstanceRegistry<FeatureExtractionPipeline>(MAX_SHARED_PIPELINES);
+
+function pipelineKey(model: string, config?: LocalProviderConfig): string {
+  return JSON.stringify([
+    model,
+    config?.precision ?? 'fp32',
+    config?.device ?? '',
+    config?.modelPath ?? '',
+    config?.cacheDir ?? '',
+    config?.allowRemoteModels ?? true,
+  ]);
+}
+
+/**
+ * Disposes every shared pipeline held by the process-level registry and
+ * empties it. Call on shutdown or between tests. Providers created before
+ * this call must not be used afterwards (their session is released); new
+ * providers construct fresh pipelines.
+ */
+export async function disposeLocalPipelines(): Promise<void> {
+  const pipelines = await pipelineRegistry.clear();
+  for (const pipe of pipelines) {
+    try {
+      await pipe.dispose?.();
+    } catch {
+      // Best-effort: a failed dispose must not mask the others.
+    }
+  }
 }
 
 /**
@@ -44,66 +88,74 @@ export function createLocalProvider(config?: LocalProviderConfig): EmbeddingProv
   const queryPrefix = config?.queryPrefix ?? registryInfo?.prefixes?.query ?? '';
   const pooling: PoolingMethod = config?.pooling ?? registryInfo?.pooling ?? 'mean';
 
-  let pipelineInstance: FeatureExtractionPipeline | null = null;
-  let pipelinePromise: Promise<FeatureExtractionPipeline> | null = null;
   const cache: CacheProvider = createLRUCache(config?.cache ?? { maxSize: 1000 });
 
-  async function getPipeline(): Promise<FeatureExtractionPipeline> {
-    if (pipelineInstance) return pipelineInstance;
-    if (pipelinePromise) return pipelinePromise;
+  async function buildPipeline(): Promise<FeatureExtractionPipeline> {
+    try {
+      const transformers = await import('@huggingface/transformers');
 
-    pipelinePromise = (async () => {
-      try {
-        const transformers = await import('@huggingface/transformers');
-
-        // Honor the advertised environment config. Previously these declared
-        // LocalProviderConfig fields were ignored (latent bug); wiring them
-        // here lets callers point transformers at local models / custom caches
-        // and toggle remote downloads.
-        transformers.env.allowRemoteModels = config?.allowRemoteModels ?? true;
-        if (config?.modelPath) {
-          transformers.env.localModelPath = config.modelPath;
-        }
-        if (config?.cacheDir) {
-          transformers.env.cacheDir = config.cacheDir;
-        }
-
-        // Build pipeline options. precision maps to dtype (now incl. 'q4').
-        // device is only passed for non-webgpu providers, mirroring
-        // semantic-chunking's guard — passing device for 'webgpu' breaks it.
-        const pipelineOptions: Record<string, unknown> = {
-          dtype: config?.precision ?? 'fp32',
-        };
-        if (config?.device && config.device !== 'webgpu') {
-          pipelineOptions.device = config.device;
-        }
-
-        const pipe = await transformers.pipeline(
-          'feature-extraction',
-          model,
-          pipelineOptions as Parameters<typeof transformers.pipeline>[2]
-        );
-        pipelineInstance = pipe as unknown as FeatureExtractionPipeline;
-        return pipelineInstance;
-      } catch (error: unknown) {
-        pipelinePromise = null;
-        const err = error instanceof Error ? error : null;
-        const code = (error as { code?: string })?.code;
-        if (
-          code === 'ERR_MODULE_NOT_FOUND' ||
-          code === 'MODULE_NOT_FOUND' ||
-          err?.message?.includes('Cannot find module')
-        ) {
-          throw new ModelNotFoundError(
-            '@huggingface/transformers is not installed. ' +
-              'Install it with: npm install @huggingface/transformers'
-          );
-        }
-        throw error;
+      // Honor the advertised environment config. Previously these declared
+      // LocalProviderConfig fields were ignored (latent bug); wiring them
+      // here lets callers point transformers at local models / custom caches
+      // and toggle remote downloads.
+      transformers.env.allowRemoteModels = config?.allowRemoteModels ?? true;
+      if (config?.modelPath) {
+        transformers.env.localModelPath = config.modelPath;
       }
-    })();
+      if (config?.cacheDir) {
+        transformers.env.cacheDir = config.cacheDir;
+      }
 
-    return pipelinePromise;
+      // Build pipeline options. precision maps to dtype (now incl. 'q4').
+      // device is only passed for non-webgpu providers, mirroring
+      // semantic-chunking's guard — passing device for 'webgpu' breaks it.
+      const pipelineOptions: Record<string, unknown> = {
+        dtype: config?.precision ?? 'fp32',
+      };
+      if (config?.device && config.device !== 'webgpu') {
+        pipelineOptions.device = config.device;
+      }
+
+      const pipe = await transformers.pipeline(
+        'feature-extraction',
+        model,
+        pipelineOptions as Parameters<typeof transformers.pipeline>[2]
+      );
+      return pipe as unknown as FeatureExtractionPipeline;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : null;
+      const code = (error as { code?: string })?.code;
+      if (
+        code === 'ERR_MODULE_NOT_FOUND' ||
+        code === 'MODULE_NOT_FOUND' ||
+        err?.message?.includes('Cannot find module')
+      ) {
+        throw new ModelNotFoundError(
+          '@huggingface/transformers is not installed. ' +
+            'Install it with: npm install @huggingface/transformers'
+        );
+      }
+      throw error;
+    }
+  }
+
+  // Shared path (default): one pipeline per unique construction config for
+  // the whole process, via the bounded registry. Opt-out with `reuse: false`
+  // for a private session (e.g. to dispose it independently).
+  const reuse = config?.reuse ?? true;
+  let privatePipelinePromise: Promise<FeatureExtractionPipeline> | null = null;
+
+  function getPipeline(): Promise<FeatureExtractionPipeline> {
+    if (reuse) {
+      return pipelineRegistry.getOrCreate(pipelineKey(model, config), buildPipeline);
+    }
+    if (!privatePipelinePromise) {
+      privatePipelinePromise = buildPipeline().catch((error: unknown) => {
+        privatePipelinePromise = null; // allow retry after failure
+        throw error;
+      });
+    }
+    return privatePipelinePromise;
   }
 
   // Per-input cache key: keyed on the prefixed text so repeated/overlapping
