@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createLocalProvider } from '../../src/providers/local';
+import { createLocalProvider, disposeLocalPipelines } from '../../src/providers/local';
 
 // Mock @huggingface/transformers
 const mockPipelineFn = vi.fn();
@@ -11,7 +11,9 @@ vi.mock('@huggingface/transformers', () => ({
 }));
 
 describe('createLocalProvider', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Empty the process-level pipeline registry so each test constructs fresh.
+    await disposeLocalPipelines();
     vi.clearAllMocks();
     mockPipelineFn.mockReset();
     mockPipeline.mockReset();
@@ -42,7 +44,7 @@ describe('createLocalProvider', () => {
     expect(mockPipeline).toHaveBeenCalledWith(
       'feature-extraction',
       'Xenova/all-MiniLM-L12-v2',
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -73,10 +75,7 @@ describe('createLocalProvider', () => {
 
     await provider.embed('hello', { inputType: 'document' });
 
-    expect(mockPipelineFn).toHaveBeenCalledWith(
-      ['passage: hello'],
-      expect.any(Object),
-    );
+    expect(mockPipelineFn).toHaveBeenCalledWith(['passage: hello'], expect.any(Object));
   });
 
   it('should prepend queryPrefix when inputType is "query"', async () => {
@@ -87,10 +86,7 @@ describe('createLocalProvider', () => {
 
     await provider.embed('hello', { inputType: 'query' });
 
-    expect(mockPipelineFn).toHaveBeenCalledWith(
-      ['query: hello'],
-      expect.any(Object),
-    );
+    expect(mockPipelineFn).toHaveBeenCalledWith(['query: hello'], expect.any(Object));
   });
 
   it('should default to mean pooling for models without a registry pooling field', async () => {
@@ -101,7 +97,7 @@ describe('createLocalProvider', () => {
 
     expect(mockPipelineFn).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ pooling: 'mean', normalize: true }),
+      expect.objectContaining({ pooling: 'mean', normalize: true })
     );
   });
 
@@ -113,7 +109,7 @@ describe('createLocalProvider', () => {
 
     expect(mockPipelineFn).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ pooling: 'cls' }),
+      expect.objectContaining({ pooling: 'cls' })
     );
   });
 
@@ -127,7 +123,7 @@ describe('createLocalProvider', () => {
 
     expect(mockPipelineFn).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ pooling: 'last_token' }),
+      expect.objectContaining({ pooling: 'last_token' })
     );
   });
 
@@ -142,7 +138,7 @@ describe('createLocalProvider', () => {
 
     expect(mockPipelineFn).toHaveBeenCalledWith(
       expect.any(Array),
-      expect.objectContaining({ pooling: 'mean' }),
+      expect.objectContaining({ pooling: 'mean' })
     );
   });
 
@@ -151,16 +147,10 @@ describe('createLocalProvider', () => {
     const provider = createLocalProvider({ model: 'Xenova/e5-base-v2' });
 
     await provider.embed('hello', { inputType: 'query' });
-    expect(mockPipelineFn).toHaveBeenLastCalledWith(
-      ['query: hello'],
-      expect.any(Object),
-    );
+    expect(mockPipelineFn).toHaveBeenLastCalledWith(['query: hello'], expect.any(Object));
 
     await provider.embed('world', { inputType: 'document' });
-    expect(mockPipelineFn).toHaveBeenLastCalledWith(
-      ['passage: world'],
-      expect.any(Object),
-    );
+    expect(mockPipelineFn).toHaveBeenLastCalledWith(['passage: world'], expect.any(Object));
   });
 
   it('should let config prefixes override registry prefixes', async () => {
@@ -172,10 +162,7 @@ describe('createLocalProvider', () => {
 
     await provider.embed('hello', { inputType: 'query' });
 
-    expect(mockPipelineFn).toHaveBeenCalledWith(
-      ['custom: hello'],
-      expect.any(Object),
-    );
+    expect(mockPipelineFn).toHaveBeenCalledWith(['custom: hello'], expect.any(Object));
   });
 
   it('should use default model Xenova/all-MiniLM-L12-v2', async () => {
@@ -187,7 +174,7 @@ describe('createLocalProvider', () => {
     expect(mockPipeline).toHaveBeenCalledWith(
       'feature-extraction',
       'Xenova/all-MiniLM-L12-v2',
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -200,7 +187,7 @@ describe('createLocalProvider', () => {
     expect(mockPipeline).toHaveBeenCalledWith(
       'feature-extraction',
       'Xenova/bge-small-en-v1.5',
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 
@@ -262,8 +249,6 @@ describe('createLocalProvider', () => {
     mockPipelineFn.mockResolvedValue({ tolist: () => [[0.1]] });
     const provider = createLocalProvider();
 
-    await expect(
-      provider.embed('test', { signal: controller.signal }),
-    ).rejects.toThrow(/abort/i);
+    await expect(provider.embed('test', { signal: controller.signal })).rejects.toThrow(/abort/i);
   });
 });

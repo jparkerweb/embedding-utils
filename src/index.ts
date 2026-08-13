@@ -105,7 +105,17 @@ export { serialize, deserialize } from './storage/index';
 export type { DeserializeResult } from './storage/index';
 export { createLRUCache, warmCache } from './storage/index';
 
-export { quantize, dequantize, getQuantizationInfo, estimateMemorySavings, hammingDistance, hammingSimilarity, calibrate, calibratedQuantize, calibratedDequantize } from './quantization/index';
+export {
+  quantize,
+  dequantize,
+  getQuantizationInfo,
+  estimateMemorySavings,
+  hammingDistance,
+  hammingSimilarity,
+  calibrate,
+  calibratedQuantize,
+  calibratedDequantize,
+} from './quantization/index';
 
 export {
   clusterEmbeddings,
@@ -127,6 +137,7 @@ export {
 
 export {
   createLocalProvider,
+  disposeLocalPipelines,
   createOpenAICompatibleProvider,
   createCohereProvider,
   createGoogleVertexProvider,
@@ -152,7 +163,7 @@ export { recallAtK, ndcg, mrr, meanAveragePrecision } from './eval/index';
 export { createEmbeddingPipeline, TokenBucketRateLimiter } from './pipeline/index';
 
 export { chunkByTokenCount, chunkBySentence, chunkByStructure } from './text/index';
-export { getTokenizerInfo, createTokenizer } from './text/index';
+export { getTokenizerInfo, createTokenizer, disposeLocalTokenizers } from './text/index';
 export { createEmbeddingStore } from './store/index';
 export type { EmbeddingStore } from './store/embedding-store';
 

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0] - 2026-08-12
+
+### New Features
+
+- **Shared ONNX pipelines (session reuse):** `createLocalProvider` now shares one underlying `@huggingface/transformers` pipeline per unique `model`/`precision`/`device`/`modelPath`/`cacheDir`/`allowRemoteModels` combination via a bounded (LRU, max 4) process-level registry. Pipeline construction creates a native ONNX InferenceSession (~1.5s and hundreds of MB for typical models) that transformers.js does not cache — previously every `createLocalProvider(...)` call with the same config paid that cost again on first `embed()`. Pooling and prefixes are per-inference arguments and deliberately do **not** split the session, so providers differing only in `pooling`/`documentPrefix`/`queryPrefix` share one pipeline. Opt out per provider with the new `LocalProviderConfig.reuse: false` (private session). Failed constructions are evicted so the next call retries.
+- **Shared tokenizers:** `createTokenizer(...).load()` similarly shares one loaded tokenizer per unique `model`/`modelPath`/`cacheDir`/`allowRemoteModels` combination (bounded registry, max 8), skipping the ~350ms tokenizer-file re-parse `AutoTokenizer.from_pretrained` performs on every call. Tokenizers are stateless, so sharing is safe. Opt out with the new `CreateTokenizerOptions.reuse: false`.
+- **`disposeLocalPipelines()`:** disposes every shared pipeline (releasing its ONNX session via the pipeline's `dispose()`) and empties the registry. Call on shutdown or between tests. Providers created before the call must not be used afterwards.
+- **`disposeLocalTokenizers()`:** empties the tokenizer registry (nothing native to dispose; existing tokenizers keep working).
+
+### Notes
+
+- **Behavior-compatible, memory-profile change:** numeric output is unchanged for every configuration. The only observable differences are (a) construction cost drops to ~0 for repeated same-config providers/tokenizers, and (b) a process that iterates over many models now holds up to the registry bounds (4 pipelines / 8 tokenizers) alive concurrently instead of one-at-a-time GC. Registry eviction drops the reference without disposing — active holders keep working and memory is reclaimed when they release it.
+- The live smoke test (`npm run smoke`) now also verifies that a second same-config provider reuses the shared pipeline and produces bit-identical vectors.
+
 ## [0.5.0] - 2026-05-28
 
 ### New Features

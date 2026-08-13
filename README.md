@@ -140,6 +140,7 @@ If `@huggingface/transformers` is missing, `createLocalProvider().embed(...)` an
 | `pooling` | `'mean' \| 'cls' \| 'last_token'` | model registry default | Override the token pooling method. |
 | `documentPrefix` / `queryPrefix` | `string` | model registry default | Override the prefixes applied for `inputType: 'document' \| 'query'`. |
 | `cache` | `CacheOptions` | `{ maxSize: 1000 }` | Internal LRU cache config. |
+| `reuse` | `boolean` | `true` | Share the underlying ONNX pipeline with other providers created with the same model/precision/device/modelPath/cacheDir. Set `false` for a private session. |
 
 ```typescript
 import { createLocalProvider } from 'embedding-utils';
@@ -159,6 +160,8 @@ const { embeddings } = await provider.embed(['hello world', 'goodbye world']);
 > **`modelPath` / `cacheDir` / `allowRemoteModels` are now honored.** Prior versions declared these fields but ignored them; they are now applied to the transformers environment. For `device`, the value is forwarded to the pipeline for non-`'webgpu'` providers and intentionally omitted when set to `'webgpu'` (passing it breaks WebGPU init).
 
 > **Caching:** the local provider caches per input text, so repeated or overlapping texts hit the cache across separate `embed` calls. Embedding an empty array returns `{ embeddings: [], dimensions: 0 }`.
+
+> **Session reuse (v0.6.0):** constructing the ONNX pipeline costs ~1.5s and significant native memory, and `@huggingface/transformers` does not cache sessions. Providers now share one pipeline per unique `model`/`precision`/`device`/`modelPath`/`cacheDir` combination via a bounded (LRU, max 4) process-level registry, so repeated `createLocalProvider(...)` calls with the same config are effectively free. Pooling and prefixes are per-inference arguments and do **not** split the session. Opt out with `reuse: false`; release all shared sessions with `disposeLocalPipelines()` (on shutdown or between tests). Evicted pipelines are never force-disposed — existing holders keep working.
 
 ### Exact token counting -- `createTokenizer`
 
@@ -192,6 +195,8 @@ tokenizer.modelId;    // the model id this tokenizer was created for
 | `modelId` | `readonly string` | Model id this tokenizer was created for. |
 
 `count` / `countBatch` throw `EmbeddingUtilsError` if called before `load()` completes. `load()` throws `ModelNotFoundError` if `@huggingface/transformers` is not installed.
+
+> **Tokenizer reuse (v0.6.0):** `AutoTokenizer.from_pretrained` re-parses the tokenizer files (~350ms) on every call. `load()` now shares one loaded tokenizer per unique `model`/`modelPath`/`cacheDir` combination via a bounded process-level registry, so repeated `createTokenizer(...).load()` cycles are effectively free. Tokenizers are stateless, so sharing is safe. Opt out with `{ reuse: false }`; reset the registry with `disposeLocalTokenizers()` (mainly for tests).
 
 ---
 
@@ -1478,6 +1483,7 @@ console.log(results.map(r => r.id)); // => ['3', '1']
 | Function | Description |
 |----------|-------------|
 | `createLocalProvider(config?)` | Local ONNX provider |
+| `disposeLocalPipelines()` | Dispose all shared ONNX pipelines and reset the reuse registry |
 | `createOpenAICompatibleProvider(config)` | OpenAI / compatible APIs |
 | `createCohereProvider(config)` | Cohere API |
 | `createGoogleVertexProvider(config)` | Google Vertex AI |
@@ -1528,6 +1534,7 @@ console.log(results.map(r => r.id)); // => ['3', '1']
 | `chunkByStructure(text, opts?)` | Markdown-aware chunking with heading metadata |
 | `getTokenizerInfo(model)` | Get model tokenizer info |
 | `createTokenizer(model, opts?)` | Exact token counter (load/count/countBatch/maxTokens/modelId) |
+| `disposeLocalTokenizers()` | Reset the shared tokenizer reuse registry |
 
 ### Store
 

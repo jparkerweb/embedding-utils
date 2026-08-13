@@ -537,6 +537,16 @@ export interface LocalProviderConfig {
    * from the registry, falling back to 'mean'.
    */
   pooling?: 'mean' | 'cls' | 'last_token';
+  /**
+   * Whether to share the underlying ONNX pipeline with other providers
+   * created with the same model/precision/device/modelPath/cacheDir (via a
+   * bounded process-level registry). Sharing avoids re-creating the native
+   * InferenceSession (~1.5s and significant memory per construction) on every
+   * `createLocalProvider` call. Pooling/prefixes are per-inference and do not
+   * affect sharing. Set to `false` for a private session you can release
+   * independently of {@link disposeLocalPipelines}. Default: true.
+   */
+  reuse?: boolean;
 }
 
 /**
@@ -720,6 +730,15 @@ export interface CreateTokenizerOptions {
   cacheDir?: string;
   /** Whether to allow downloading models from HuggingFace Hub. Default: true. */
   allowRemoteModels?: boolean;
+  /**
+   * Whether to share the loaded tokenizer with other `createTokenizer` calls
+   * using the same model/modelPath/cacheDir (via a bounded process-level
+   * registry). Sharing skips the ~350ms tokenizer-file re-parse that
+   * `AutoTokenizer.from_pretrained` performs on every call. Tokenizers are
+   * stateless, so sharing is safe. Set to `false` for a private instance.
+   * Default: true.
+   */
+  reuse?: boolean;
 }
 
 /**

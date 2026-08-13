@@ -1,4 +1,4 @@
-export { createLocalProvider } from './local';
+export { createLocalProvider, disposeLocalPipelines } from './local';
 export { createOpenAICompatibleProvider } from './openai-compatible';
 export { createCohereProvider } from './cohere';
 export { createGoogleVertexProvider } from './google';
