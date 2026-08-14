@@ -63,20 +63,19 @@ for (const [modelId, precision] of models) {
   const info = getModelInfo(modelId);
   const expectedPooling = info?.pooling ?? 'mean';
   const expectedDims = info?.dimensions;
-  const hasPrefixes =
-    !!info?.prefixes && info.prefixes.document !== info.prefixes.query;
+  const hasPrefixes = !!info?.prefixes && info.prefixes.document !== info.prefixes.query;
 
   console.log(
     `▶ ${modelId}` +
       (precision ? `  [${precision}]` : '') +
       `  (registry: ${expectedDims ?? '?'}d, pooling=${expectedPooling}` +
       (info ? '' : ', NOT in registry') +
-      `)`,
+      `)`
   );
 
   try {
     const provider = createLocalProvider(
-      precision ? { model: modelId, precision } : { model: modelId },
+      precision ? { model: modelId, precision } : { model: modelId }
     );
 
     const docRes = await provider.embed(DOC, { inputType: 'document' });
@@ -87,9 +86,7 @@ for (const [modelId, precision] of models) {
       if (docRes.dimensions === expectedDims) {
         pass(`dimensions = ${docRes.dimensions}`);
       } else {
-        fail(
-          `dimensions mismatch: got ${docRes.dimensions}, registry says ${expectedDims}`,
-        );
+        fail(`dimensions mismatch: got ${docRes.dimensions}, registry says ${expectedDims}`);
       }
     } else {
       console.log(`    • dimensions = ${docRes.dimensions} (no registry value)`);
@@ -108,14 +105,12 @@ for (const [modelId, precision] of models) {
     // bit-identical vectors for the same input.
     const reuseStart = Date.now();
     const provider2 = createLocalProvider(
-      precision ? { model: modelId, precision } : { model: modelId },
+      precision ? { model: modelId, precision } : { model: modelId }
     );
     const docRes2 = await provider2.embed(DOC, { inputType: 'document' });
     const reuseMs = Date.now() - reuseStart;
     const docVec2 = docRes2.embeddings[0];
-    const identical =
-      docVec2.length === docVec.length &&
-      docVec2.every((v, i) => v === docVec[i]);
+    const identical = docVec2.length === docVec.length && docVec2.every((v, i) => v === docVec[i]);
     if (identical) {
       pass(`shared-pipeline reuse: identical vectors (2nd provider embed took ${reuseMs}ms)`);
     } else {
@@ -132,7 +127,7 @@ for (const [modelId, precision] of models) {
       const prefixDelta = 1 - cosine(queryRes.embeddings[0], queryAsDoc.embeddings[0]);
       if (prefixDelta > 1e-4) {
         pass(
-          `prefixes applied (query/doc encodings differ by ${prefixDelta.toExponential(2)}; query~doc sim=${sim.toFixed(3)})`,
+          `prefixes applied (query/doc encodings differ by ${prefixDelta.toExponential(2)}; query~doc sim=${sim.toFixed(3)})`
         );
       } else {
         fail('prefixes do not appear to be applied (query == doc encoding)');

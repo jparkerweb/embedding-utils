@@ -28,4 +28,16 @@ export default [
       ],
     },
   },
+  {
+    // Plain ESM, parsed by the default parser rather than the TypeScript one,
+    // so only core rules apply here.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    },
+  },
 ];

@@ -1,0 +1,7 @@
+# Normalize text files to LF in the repository regardless of the authoring
+# platform. Without this, files written on Windows land in the index with CRLF
+# while the rest of the tree is LF, producing whole-file diffs that hide the
+# real change. Prettier already enforces LF, but only for the files it covers.
+* text=auto eol=lf
+
+*.jpg binary

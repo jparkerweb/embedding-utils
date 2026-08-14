@@ -9,15 +9,17 @@
 | `npm test` | Runs the full Vitest suite once (`vitest run`). |
 | `npm run test:watch` | Vitest in watch mode. |
 | `npm run test:coverage` | Vitest with v8 coverage (`text` + `lcov`). |
-| `npm run lint` | ESLint over `src/` **and** `tests/`. |
-| `npm run format` | Prettier write over `src/**/*.ts` and `tests/**/*.ts`. |
+| `npm run lint` | ESLint over `src/`, `tests/` and `scripts/`. |
+| `npm run format` | Prettier write over `src/**/*.ts`, `tests/**/*.ts` and `scripts/**/*.mjs`. |
 | `npm run format:check` | Prettier check (no writes) — used in CI. |
 | `npm run smoke` | Builds, then runs the live local-ONNX provider test (`scripts/smoke-test.mjs`). Downloads models from HuggingFace, so it is local-only and not run in CI. |
 | `npm run engines:check` | Runs the built `dist/` (ESM + CJS) and asserts real behaviour, to verify the `engines.node` floor. See CI below. |
 
 Glob arguments in the `format` scripts must use **double** quotes. Single quotes are not stripped by `cmd`/PowerShell, so prettier receives the literal glob, matches nothing, and the script silently succeeds as a no-op on Windows.
 
-`eslint.config.mjs` relaxes two rules for `tests/**` only: `no-explicit-any` is off (mocking `fetch`/`setTimeout`/provider responses legitimately needs `any`) and `no-unused-vars` honours the `^_` prefix for intentionally unused arguments. Neither relaxation applies to `src/`. Scripts under `scripts/` are `.mjs` and are covered by neither tool.
+`eslint.config.mjs` relaxes two rules for `tests/**` only: `no-explicit-any` is off (mocking `fetch`/`setTimeout`/provider responses legitimately needs `any`) and `no-unused-vars` honours the `^_` prefix for intentionally unused arguments. Neither relaxation applies to `src/`. `scripts/**/*.mjs` is plain ESM parsed by the default parser, so only core rules apply there.
+
+`.gitattributes` pins the whole tree to `eol=lf` via `* text=auto eol=lf`. Files authored on Windows otherwise enter the index with CRLF, which produces a whole-file diff that buries the real change — this had already happened to three files. Prettier enforces LF too, but only for the extensions it covers, so the attribute is what protects `.yml`, `.json` and `.md`.
 
 ## Running a single test
 
