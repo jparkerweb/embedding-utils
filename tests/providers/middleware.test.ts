@@ -9,7 +9,7 @@ function createMockProvider(
     name: 'mock',
     dimensions: 3,
     embedCalls: 0,
-    async embed(input: string | string[]): Promise<EmbeddingResult> {
+    async embed(_input: string | string[]): Promise<EmbeddingResult> {
       mock.embedCalls++;
       return {
         embeddings,
@@ -93,7 +93,7 @@ describe('withCache', () => {
 
   it('supports custom hashFunction', async () => {
     const provider = createMockProvider();
-    const hashFn = vi.fn((key: string) => 'fixed-hash');
+    const hashFn = vi.fn((_key: string) => 'fixed-hash');
     const cached = withCache(provider, { hashFunction: hashFn });
 
     await cached.embed('hello');

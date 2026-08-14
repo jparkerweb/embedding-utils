@@ -3,7 +3,6 @@ import { HNSWIndex } from '../../src/search/hnsw';
 import { hdbscan } from '../../src/clustering/hdbscan';
 import { recallAtK, ndcg } from '../../src/eval/metrics';
 import { topK } from '../../src/search/topk';
-import { createEmbeddingStore } from '../../src/store/embedding-store';
 import { createEmbeddingPipeline } from '../../src/pipeline/pipeline';
 import { chunkByStructure } from '../../src/text/markdown';
 import { SearchIndex } from '../../src/search/search-index';
@@ -207,9 +206,6 @@ describe('integration: pipeline → store → search', () => {
     for (const emb of embeddings) {
       expect(emb).toBeInstanceOf(Float32Array);
     }
-
-    // Store the pipeline output in an EmbeddingStore (using searchByEmbedding)
-    const store = createEmbeddingStore({ provider, metric: 'cosine' });
 
     // Add items using their pre-computed embeddings via the underlying SearchIndex
     // (EmbeddingStore.add calls the provider, so we use a direct approach)

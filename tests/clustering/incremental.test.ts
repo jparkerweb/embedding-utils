@@ -51,6 +51,11 @@ describe('IncrementalClusterer', () => {
     // Should still have reasonable clusters after rebalance
     expect(afterRebalance.length).toBeGreaterThanOrEqual(1);
     expect(afterRebalance.length).toBeLessThanOrEqual(2);
+
+    // Rebalance redistributes members without dropping any
+    const membersBefore = beforeRebalance.reduce((sum, c) => sum + c.size, 0);
+    const membersAfter = afterRebalance.reduce((sum, c) => sum + c.size, 0);
+    expect(membersAfter).toBe(membersBefore);
   });
 
   it('getStats returns per-cluster statistics', () => {

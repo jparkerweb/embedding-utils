@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { centroidCohesion } from '../../src/clustering/metrics';
-import type { Cluster, SimilarityMetric } from '../../src/types';
+import type { Cluster } from '../../src/types';
 
 function makeCluster(members: number[][], centroid?: number[]): Cluster {
   const c =

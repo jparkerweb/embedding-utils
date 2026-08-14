@@ -69,7 +69,6 @@ describe('retryWithBackoff', () => {
 
   it('should increase delays exponentially', async () => {
     const delays: number[] = [];
-    const originalSetTimeout = globalThis.setTimeout;
     vi.spyOn(globalThis, 'setTimeout').mockImplementation((fn: any, delay?: number) => {
       if (delay !== undefined && delay > 0) delays.push(delay);
       // Execute immediately

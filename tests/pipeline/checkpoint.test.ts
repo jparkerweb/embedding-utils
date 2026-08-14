@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createEmbeddingPipeline } from '../../src/pipeline/pipeline';
 import type { CheckpointAdapter, CheckpointState } from '../../src/pipeline/checkpoint';
 import type { EmbeddingProvider, EmbeddingResult } from '../../src/types';

@@ -38,9 +38,6 @@ describe('integration: IncrementalClusterer pipeline', () => {
     const beforeRebalance = clusterer.getClusters();
     expect(beforeRebalance.length).toBeGreaterThanOrEqual(2);
 
-    // Record cohesion before rebalance
-    const cohesionBefore = beforeRebalance.map((c) => c.cohesion);
-
     // Rebalance
     clusterer.rebalance();
 
