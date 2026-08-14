@@ -4,10 +4,10 @@ import { aboveThreshold, deduplicate } from '../../src/search/threshold';
 describe('aboveThreshold', () => {
   const query = [1, 0, 0];
   const corpus = [
-    [1, 0, 0],     // similarity = 1.0
+    [1, 0, 0], // similarity = 1.0
     [0.9, 0.1, 0], // high similarity
-    [0, 1, 0],     // similarity = 0.0
-    [-1, 0, 0],    // similarity = -1.0
+    [0, 1, 0], // similarity = 0.0
+    [-1, 0, 0], // similarity = -1.0
   ];
 
   it('returns embeddings with similarity >= threshold', () => {
@@ -51,8 +51,8 @@ describe('deduplicate', () => {
   it('removes near-duplicate embeddings (keeps first)', () => {
     const embeddings = [
       [1, 0, 0],
-      [1, 0, 0],   // exact duplicate
-      [0, 1, 0],   // unique
+      [1, 0, 0], // exact duplicate
+      [0, 1, 0], // unique
     ];
     const result = deduplicate(embeddings, 0.99);
     expect(result.embeddings).toHaveLength(2);

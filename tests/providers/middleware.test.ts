@@ -2,12 +2,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { withCache } from '../../src/providers/middleware';
 import type { EmbeddingProvider, EmbeddingResult } from '../../src/types';
 
-function createMockProvider(embeddings: number[][] = [[0.1, 0.2, 0.3]]): EmbeddingProvider & { embedCalls: number } {
+function createMockProvider(
+  embeddings: number[][] = [[0.1, 0.2, 0.3]]
+): EmbeddingProvider & { embedCalls: number } {
   const mock = {
     name: 'mock',
     dimensions: 3,
     embedCalls: 0,
-    async embed(input: string | string[]): Promise<EmbeddingResult> {
+    async embed(_input: string | string[]): Promise<EmbeddingResult> {
       mock.embedCalls++;
       return {
         embeddings,
@@ -91,7 +93,7 @@ describe('withCache', () => {
 
   it('supports custom hashFunction', async () => {
     const provider = createMockProvider();
-    const hashFn = vi.fn((key: string) => 'fixed-hash');
+    const hashFn = vi.fn((_key: string) => 'fixed-hash');
     const cached = withCache(provider, { hashFunction: hashFn });
 
     await cached.embed('hello');
@@ -102,7 +104,10 @@ describe('withCache', () => {
   });
 
   it('handles array input', async () => {
-    const provider = createMockProvider([[0.1, 0.2], [0.3, 0.4]]);
+    const provider = createMockProvider([
+      [0.1, 0.2],
+      [0.3, 0.4],
+    ]);
     const cached = withCache(provider);
 
     await cached.embed(['hello', 'world']);

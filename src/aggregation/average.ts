@@ -74,7 +74,7 @@ export function weightedAverage(embeddings: Vector[], weights: number[]): Float3
   validateEmbeddings(embeddings);
   if (embeddings.length !== weights.length) {
     throw new ValidationError(
-      `Embeddings length (${embeddings.length}) must match weights length (${weights.length})`,
+      `Embeddings length (${embeddings.length}) must match weights length (${weights.length})`
     );
   }
   const dim = embeddings[0].length;
@@ -117,12 +117,10 @@ export function weightedAverage(embeddings: Vector[], weights: number[]): Float3
 export function incrementalAverage(
   currentAvg: Vector,
   newEmbedding: Vector,
-  count: number,
+  count: number
 ): Float32Array {
   if (currentAvg.length !== newEmbedding.length) {
-    throw new ValidationError(
-      `Dimension mismatch: ${currentAvg.length} vs ${newEmbedding.length}`,
-    );
+    throw new ValidationError(`Dimension mismatch: ${currentAvg.length} vs ${newEmbedding.length}`);
   }
   const dim = currentAvg.length;
   const result = new Float32Array(dim);
@@ -150,7 +148,7 @@ export function incrementalAverage(
 export function batchIncrementalAverage(
   currentAvg: Vector,
   newEmbeddings: Vector[],
-  count: number,
+  count: number
 ): Float32Array {
   if (newEmbeddings.length === 0) {
     throw new ValidationError('newEmbeddings array must be non-empty');
@@ -159,7 +157,7 @@ export function batchIncrementalAverage(
   for (let i = 0; i < newEmbeddings.length; i++) {
     if (newEmbeddings[i].length !== dim) {
       throw new ValidationError(
-        `Dimension mismatch: expected ${dim}, got ${newEmbeddings[i].length} at index ${i}`,
+        `Dimension mismatch: expected ${dim}, got ${newEmbeddings[i].length} at index ${i}`
       );
     }
   }

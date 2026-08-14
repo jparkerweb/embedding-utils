@@ -29,10 +29,7 @@ import { computePairwiseCohesion } from '../internal/clustering';
  * const quality = cohesionScore(cluster);
  * if (quality < 0.7) console.warn('Cluster is loosely grouped');
  */
-export function cohesionScore(
-  cluster: Cluster,
-  metric: SimilarityMetric = 'cosine',
-): number {
+export function cohesionScore(cluster: Cluster, metric: SimilarityMetric = 'cosine'): number {
   return computePairwiseCohesion(cluster.members, metric);
 }
 
@@ -66,10 +63,7 @@ export function cohesionScore(
  *   if (quality < 0.7) console.warn('Loose cluster detected');
  * }
  */
-export function centroidCohesion(
-  cluster: Cluster,
-  metric: SimilarityMetric = 'cosine',
-): number {
+export function centroidCohesion(cluster: Cluster, metric: SimilarityMetric = 'cosine'): number {
   if (cluster.members.length <= 1) return 1.0;
 
   let totalSim = 0;
@@ -115,10 +109,7 @@ export function centroidCohesion(
  *   console.log(`threshold=${threshold}: silhouette=${silhouetteScore(clusters).toFixed(3)}`);
  * }
  */
-export function silhouetteScore(
-  clusters: Cluster[],
-  metric: SimilarityMetric = 'cosine',
-): number {
+export function silhouetteScore(clusters: Cluster[], metric: SimilarityMetric = 'cosine'): number {
   if (clusters.length <= 1) return 0;
 
   let totalSilhouette = 0;

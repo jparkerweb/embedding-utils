@@ -21,7 +21,12 @@ function createMockProvider(): EmbeddingProvider {
         if (text.startsWith('food')) return [0.1, 0.0, 0.0, 0.9];
         // Default: hash-based
         const hash = text.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        return [(hash % 10) / 10, ((hash * 3) % 10) / 10, ((hash * 7) % 10) / 10, ((hash * 13) % 10) / 10];
+        return [
+          (hash % 10) / 10,
+          ((hash * 3) % 10) / 10,
+          ((hash * 7) % 10) / 10,
+          ((hash * 13) % 10) / 10,
+        ];
       });
       return { embeddings, model: 'mock', dimensions: 4 };
     },

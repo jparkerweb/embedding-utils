@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Maintenance
+
+Tooling and dependency work only — **no changes to the public API or to runtime behavior**. Consumers are unaffected.
+
+- **TypeScript 6:** upgraded from 5.9 to 6.0.3, the highest major currently supported by `@typescript-eslint` v8 (`>=4.8.4 <6.1.0`). TypeScript 7 is deliberately deferred until typescript-eslint supports it. `tsconfig.json` now sets `"ignoreDeprecations": "6.0"`, which TS 6 requires because tsup's dts pipeline injects the now-deprecated `baseUrl`.
+- **All npm audit advisories resolved (5 → 0).** Added `overrides` for `sharp` (libvips CVEs), `adm-zip`, and `esbuild`, each of which was pinned below its fixed version by a dependency with no upstream fix available. All three sat under `@huggingface/transformers`, the optional peer dependency, so consumers not using the local ONNX provider were never exposed. Every override is documented with a condition for its removal.
+- **`package-lock.json` is now tracked.** It was previously gitignored, so installs were not reproducible and the `overrides` above had no recorded resolution. Use `npm ci`.
+- **Fixed `npm run format`, which was a silent no-op on Windows.** Its globs were single-quoted, which `cmd`/PowerShell do not strip, so Prettier matched zero files and exited successfully. As a result 90 files had been formatted at Prettier's defaults rather than this project's `.prettierrc` (100 columns, `es5` trailing commas); the configured style is now applied throughout. Added `npm run format:check`.
+- **`npm run lint` now covers `tests/` as well as `src/`.** `eslint.config.mjs` had always declared `tests/**`, but the script never passed it. Cleared the dead code this surfaced — unused imports, a vestigial `EmbeddingStore`, and an abandoned serialization buffer — and relaxed `no-explicit-any` for test files only.
+- **Added CI** (`.github/workflows/ci.yml`): format, lint, typecheck, test and build across Node 20/22/24, plus an `engines-floor` job that runs the built `dist/` on Node 18 to verify the `engines.node` claim (the dev toolchain itself now requires Node >=20), and a weekly `npm audit`.
+- **`scripts/` is now linted and formatted**, and `.gitattributes` pins the tree to LF line endings so files authored on Windows can no longer enter the index with CRLF.
+
 ## [0.6.0] - 2026-08-12
 
 ### New Features

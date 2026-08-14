@@ -39,7 +39,12 @@ describe('averageEmbeddings', () => {
   });
 
   it('throws ValidationError for mixed dimensions', () => {
-    expect(() => averageEmbeddings([[1, 2], [1, 2, 3]])).toThrow(ValidationError);
+    expect(() =>
+      averageEmbeddings([
+        [1, 2],
+        [1, 2, 3],
+      ])
+    ).toThrow(ValidationError);
   });
 
   it('returns the vector itself for a single input', () => {
@@ -78,7 +83,7 @@ describe('weightedAverage', () => {
         [10, 20],
         [1, 2],
       ],
-      [0, 1],
+      [0, 1]
     );
     expect(result).toBeInstanceOf(Float32Array);
     expect(Array.from(result)).toEqual([1, 2]);
@@ -90,7 +95,7 @@ describe('weightedAverage', () => {
         [0, 0],
         [10, 10],
       ],
-      [1, 3],
+      [1, 3]
     );
     // (0*1 + 10*3) / (1+3) = 7.5
     expect(result).toBeInstanceOf(Float32Array);

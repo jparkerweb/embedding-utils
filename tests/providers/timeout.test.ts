@@ -21,7 +21,7 @@ describe('provider timeouts', () => {
           init?.signal?.addEventListener('abort', () => {
             reject(init.signal!.reason);
           });
-        }),
+        })
     );
     vi.stubGlobal('fetch', hangingFetch);
   }

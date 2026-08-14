@@ -18,10 +18,7 @@ import type { SearchOptions, Vector } from '../types';
  * @returns A symmetric NxN matrix of similarity scores
  * @throws {ValidationError} If the embeddings array is empty
  */
-export function similarityMatrix(
-  embeddings: Vector[],
-  options?: SearchOptions,
-): number[][] {
+export function similarityMatrix(embeddings: Vector[], options?: SearchOptions): number[][] {
   if (embeddings.length === 0) {
     throw new ValidationError('Embeddings array must be non-empty');
   }

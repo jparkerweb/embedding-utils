@@ -4,11 +4,11 @@ import { mmrSearch } from '../../src/search/mmr';
 describe('mmrSearch', () => {
   const query = [1, 0, 0];
   const corpus = [
-    [1, 0, 0],       // index 0: identical to query
+    [1, 0, 0], // index 0: identical to query
     [0.99, 0.01, 0], // index 1: very similar to query and index 0
-    [0, 1, 0],       // index 2: orthogonal/diverse
-    [0, 0, 1],       // index 3: orthogonal/diverse
-    [-1, 0, 0],      // index 4: opposite
+    [0, 1, 0], // index 2: orthogonal/diverse
+    [0, 0, 1], // index 3: orthogonal/diverse
+    [-1, 0, 0], // index 4: opposite
   ];
 
   it('with lambda=1.0 matches topK ordering (pure relevance)', () => {

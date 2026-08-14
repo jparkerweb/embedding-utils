@@ -13,11 +13,11 @@ import type { SimilarityMetric, Vector } from '../types';
 export function pairwiseSimilarity(
   listA: Vector[],
   listB: Vector[],
-  metric: SimilarityMetric = 'cosine',
+  metric: SimilarityMetric = 'cosine'
 ): number[] {
   if (listA.length !== listB.length) {
     throw new ValidationError(
-      `Lists must have the same length, got ${listA.length} and ${listB.length}`,
+      `Lists must have the same length, got ${listA.length} and ${listB.length}`
     );
   }
 
@@ -25,7 +25,7 @@ export function pairwiseSimilarity(
   for (let i = 0; i < listA.length; i++) {
     if (listA[i].length !== listB[i].length) {
       throw new DimensionMismatchError(
-        `Dimension mismatch at index ${i}: ${listA[i].length} vs ${listB[i].length}`,
+        `Dimension mismatch at index ${i}: ${listA[i].length} vs ${listB[i].length}`
       );
     }
     scores[i] = computeScore(listA[i], listB[i], metric);

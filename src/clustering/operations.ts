@@ -48,7 +48,7 @@ import { computeCentroid, computePairwiseCohesion } from '../internal/clustering
 export function assignToCluster(
   embedding: Vector,
   clusters: Cluster[],
-  options?: { metric?: SimilarityMetric; threshold?: number },
+  options?: { metric?: SimilarityMetric; threshold?: number }
 ): { clusterIndex: number; similarity: number } {
   const metric = options?.metric ?? 'cosine';
   const threshold = options?.threshold ?? 0;
@@ -97,13 +97,10 @@ export function assignToCluster(
 export function mergeClusters(
   a: Cluster,
   b: Cluster,
-  metric: SimilarityMetric = 'cosine',
+  metric: SimilarityMetric = 'cosine'
 ): Cluster {
   const members = [...a.members, ...b.members];
-  const labels =
-    a.labels || b.labels
-      ? [...(a.labels || []), ...(b.labels || [])]
-      : undefined;
+  const labels = a.labels || b.labels ? [...(a.labels || []), ...(b.labels || [])] : undefined;
 
   return {
     centroid: computeCentroid(members),

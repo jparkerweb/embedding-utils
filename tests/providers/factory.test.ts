@@ -55,7 +55,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('voyage', {
@@ -74,7 +74,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('mistral', {
@@ -93,7 +93,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('jina', {
@@ -112,7 +112,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('openrouter', {
@@ -131,7 +131,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('together', {
@@ -150,7 +150,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('fireworks', {
@@ -169,7 +169,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('nomic', {
@@ -188,7 +188,7 @@ describe('createProvider', () => {
       mockFetchResponse({
         data: [{ embedding: [0.1], index: 0 }],
         usage: { total_tokens: 1 },
-      }),
+      })
     );
 
     const provider = createProvider('mixedbread', {

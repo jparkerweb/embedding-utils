@@ -107,7 +107,10 @@ describe('createCohereProvider', () => {
   it('should parse embeddings.float response', async () => {
     const response = {
       embeddings: {
-        float: [[0.1, 0.2], [0.3, 0.4]],
+        float: [
+          [0.1, 0.2],
+          [0.3, 0.4],
+        ],
       },
       meta: { billed_units: { input_tokens: 8 } },
     };

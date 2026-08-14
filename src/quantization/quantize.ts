@@ -85,7 +85,7 @@ export function quantize(embedding: Vector, type: 'uint8'): Uint8Array;
 export function quantize(embedding: Vector, type: 'binary'): Uint8Array;
 export function quantize(
   embedding: Vector,
-  type: QuantizationType,
+  type: QuantizationType
 ): Float32Array | Int8Array | Uint8Array {
   switch (type) {
     case 'fp16': {
@@ -138,14 +138,26 @@ export function quantize(
  * @example
  * dequantize(new Int8Array([64, -38, 102]), 'int8'); // [0.504, -0.299, 0.803]
  */
-export function dequantize(data: Float32Array, type: 'fp16', originalDimension?: number): Float32Array;
+export function dequantize(
+  data: Float32Array,
+  type: 'fp16',
+  originalDimension?: number
+): Float32Array;
 export function dequantize(data: Int8Array, type: 'int8', originalDimension?: number): Float32Array;
-export function dequantize(data: Uint8Array, type: 'uint8', originalDimension?: number): Float32Array;
-export function dequantize(data: Uint8Array, type: 'binary', originalDimension?: number): Float32Array;
+export function dequantize(
+  data: Uint8Array,
+  type: 'uint8',
+  originalDimension?: number
+): Float32Array;
+export function dequantize(
+  data: Uint8Array,
+  type: 'binary',
+  originalDimension?: number
+): Float32Array;
 export function dequantize(
   data: Float32Array | Int8Array | Uint8Array,
   type: QuantizationType,
-  originalDimension?: number,
+  originalDimension?: number
 ): Float32Array {
   switch (type) {
     case 'fp16': {

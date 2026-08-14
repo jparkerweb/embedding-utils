@@ -41,14 +41,14 @@ export function validateVectorPair(
   a: Vector,
   b: Vector,
   nameA = 'Vector A',
-  nameB = 'Vector B',
+  nameB = 'Vector B'
 ): void {
   if (a.length === 0 || b.length === 0) {
     throw new ValidationError('Vectors must be non-empty');
   }
   if (a.length !== b.length) {
     throw new DimensionMismatchError(
-      `Dimension mismatch: ${nameA} has ${a.length} dimensions, ${nameB} has ${b.length}`,
+      `Dimension mismatch: ${nameA} has ${a.length} dimensions, ${nameB} has ${b.length}`
     );
   }
 }
@@ -65,7 +65,7 @@ export function validateEmbeddings(embeddings: Vector[], name = 'Embeddings'): v
   for (let i = 1; i < embeddings.length; i++) {
     if (embeddings[i].length !== dim) {
       throw new DimensionMismatchError(
-        `Dimension mismatch: expected ${dim}, got ${embeddings[i].length} at index ${i}`,
+        `Dimension mismatch: expected ${dim}, got ${embeddings[i].length} at index ${i}`
       );
     }
   }

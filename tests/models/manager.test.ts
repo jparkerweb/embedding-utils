@@ -47,7 +47,7 @@ describe('model manager', () => {
       expect(mockPipeline).toHaveBeenCalledWith(
         'feature-extraction',
         'Xenova/all-MiniLM-L12-v2',
-        expect.any(Object),
+        expect.any(Object)
       );
       expect(typeof result).toBe('string');
     });
@@ -60,7 +60,7 @@ describe('model manager', () => {
       expect(mockPipeline).toHaveBeenCalledWith(
         'feature-extraction',
         'Xenova/all-MiniLM-L6-v2',
-        expect.objectContaining({ cache_dir: '/custom/cache' }),
+        expect.objectContaining({ cache_dir: '/custom/cache' })
       );
     });
   });
@@ -95,10 +95,10 @@ describe('model manager', () => {
 
       await deleteModel('Xenova/all-MiniLM-L12-v2', '/cache/dir');
 
-      expect(mockRm).toHaveBeenCalledWith(
-        expect.stringContaining('Xenova--all-MiniLM-L12-v2'),
-        { recursive: true, force: true },
-      );
+      expect(mockRm).toHaveBeenCalledWith(expect.stringContaining('Xenova--all-MiniLM-L12-v2'), {
+        recursive: true,
+        force: true,
+      });
     });
   });
 
@@ -110,10 +110,7 @@ describe('model manager', () => {
 
       await listModels();
 
-      expect(mockReaddir).toHaveBeenCalledWith(
-        '/my/custom/path',
-        expect.any(Object),
-      );
+      expect(mockReaddir).toHaveBeenCalledWith('/my/custom/path', expect.any(Object));
 
       // Reset for other tests
       setModelPath('');

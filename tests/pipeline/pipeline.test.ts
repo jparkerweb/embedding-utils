@@ -44,7 +44,9 @@ describe('batchIterator', () => {
 
 // ── Task 7.5: Pipeline End-to-End ───────────────────────────────────────────
 
-function createMockProvider(dims: number = 3): EmbeddingProvider & { callCount: number; concurrentCalls: number; maxConcurrent: number } {
+function createMockProvider(
+  dims: number = 3
+): EmbeddingProvider & { callCount: number; concurrentCalls: number; maxConcurrent: number } {
   const provider = {
     name: 'mock',
     dimensions: dims,

@@ -17,7 +17,7 @@ function meanSilhouette(
   embeddings: Vector[],
   assignments: number[],
   k: number,
-  metric: SimilarityMetric,
+  metric: SimilarityMetric
 ): number {
   if (k <= 1) return 0;
 
@@ -71,7 +71,7 @@ function withinClusterSumOfDistances(
   embeddings: Vector[],
   assignments: number[],
   k: number,
-  metric: SimilarityMetric,
+  metric: SimilarityMetric
 ): number {
   // Compute centroid for each cluster
   const clusterMembers: Vector[][] = Array.from({ length: k }, () => []);
@@ -93,19 +93,19 @@ function withinClusterSumOfDistances(
 /**
  * Runs clustering for a given k and returns flat assignment array.
  */
-function clusterAndAssign(
-  embeddings: Vector[],
-  k: number,
-  metric: SimilarityMetric,
-): number[] {
+function clusterAndAssign(embeddings: Vector[], k: number, metric: SimilarityMetric): number[] {
   // Use labels to track original indices through clustering
   const indexLabels = embeddings.map((_, i) => String(i));
-  const clusters = clusterEmbeddings(embeddings, {
-    maxClusters: k,
-    minClusterSize: 1,
-    similarityThreshold: 0,
-    metric,
-  }, indexLabels);
+  const clusters = clusterEmbeddings(
+    embeddings,
+    {
+      maxClusters: k,
+      minClusterSize: 1,
+      similarityThreshold: 0,
+      metric,
+    },
+    indexLabels
+  );
 
   // Build assignment map using labels (original indices)
   const assignments = new Array<number>(embeddings.length).fill(0);
@@ -133,10 +133,7 @@ function clusterAndAssign(
  * @param options - Configuration: minK, maxK, metric, method
  * @returns The optimal k value
  */
-export function findOptimalK(
-  embeddings: Vector[],
-  options?: OptimalKOptions,
-): number {
+export function findOptimalK(embeddings: Vector[], options?: OptimalKOptions): number {
   const method = options?.method ?? 'silhouette';
   const metric = options?.metric ?? 'cosine';
   const minK = options?.minK ?? 2;
@@ -196,7 +193,7 @@ export function findOptimalK(
  */
 export function silhouetteByK(
   embeddings: Vector[],
-  options?: Omit<OptimalKOptions, 'method'>,
+  options?: Omit<OptimalKOptions, 'method'>
 ): Array<{ k: number; silhouette: number }> {
   const metric = options?.metric ?? 'cosine';
   const minK = options?.minK ?? 2;

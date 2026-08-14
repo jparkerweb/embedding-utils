@@ -66,25 +66,6 @@ describe('binary format v2', () => {
 describe('v1 backward compatibility', () => {
   it('deserializes v1 binary data (no version byte)', () => {
     // Manually craft v1 binary: [count:u32LE][dims:u32LE][float32LE * dims] per embedding
-    const embs = [[1.0, 2.0], [3.0, 4.0]];
-    const totalBytes = 4 + embs.length * (4 + embs[0].length * 4);
-    const buffer = new ArrayBuffer(totalBytes);
-    const view = new DataView(buffer);
-    let offset = 0;
-
-    view.setUint32(offset, embs.length, true); // count = 2
-    offset += 4;
-
-    for (const emb of embs) {
-      view.setUint32(offset, emb.length, true); // dims = 2
-      offset += 4;
-      for (const val of emb) {
-        view.setFloat32(offset, val, true);
-        offset += 4;
-      }
-    }
-
-    const v1Data = new Uint8Array(buffer);
     // First byte of v1 data is part of count (uint32LE for 2 = [2, 0, 0, 0])
     // which is also 2 — same as V2_VERSION. But that's only when count=2.
     // For v1 with count != 2, the first byte differs.

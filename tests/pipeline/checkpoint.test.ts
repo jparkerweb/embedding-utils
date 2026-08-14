@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createEmbeddingPipeline } from '../../src/pipeline/pipeline';
 import type { CheckpointAdapter, CheckpointState } from '../../src/pipeline/checkpoint';
 import type { EmbeddingProvider, EmbeddingResult } from '../../src/types';
@@ -23,7 +23,7 @@ function createMockProvider(dims: number = 3): EmbeddingProvider & { callLog: st
 }
 
 function createInMemoryCheckpoint(
-  initialState: CheckpointState | null = null,
+  initialState: CheckpointState | null = null
 ): CheckpointAdapter & { saved: CheckpointState[]; loadCalls: number } {
   const adapter = {
     state: initialState,

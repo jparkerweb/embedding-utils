@@ -24,7 +24,7 @@ export function topK(
   query: Vector,
   corpus: Vector[],
   k: number,
-  options?: SearchOptions,
+  options?: SearchOptions
 ): SearchResult[] {
   if (k < 1 || !Number.isInteger(k)) {
     throw new ValidationError(`k must be a positive integer, got ${k}`);
@@ -36,7 +36,7 @@ export function topK(
 
   if (corpus.length > 0 && query.length !== corpus[0].length) {
     throw new DimensionMismatchError(
-      `Query dimension (${query.length}) does not match corpus dimension (${corpus[0].length})`,
+      `Query dimension (${query.length}) does not match corpus dimension (${corpus[0].length})`
     );
   }
 
@@ -104,7 +104,7 @@ export function topKMulti(
   queries: Vector[],
   corpus: Vector[],
   k: number,
-  options?: SearchOptions,
+  options?: SearchOptions
 ): SearchResult[][] {
   return queries.map((query) => topK(query, corpus, k, options));
 }

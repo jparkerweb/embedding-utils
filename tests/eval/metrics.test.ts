@@ -47,8 +47,16 @@ describe('ndcg', () => {
     // = 0/1 + 1/1.585 + 3/2 + 7/2.322 = 0 + 0.6309 + 1.5 + 3.0145 = 5.1454
     // IDCG (perfect): (2^3-1)/log2(2) + (2^2-1)/log2(3) + (2^1-1)/log2(4) + (2^0-1)/log2(5)
     // = 7/1 + 3/1.585 + 1/2 + 0/2.322 = 7 + 1.8928 + 0.5 + 0 = 9.3928
-    const dcg = 0 / Math.log2(2) + (Math.pow(2, 1) - 1) / Math.log2(3) + (Math.pow(2, 2) - 1) / Math.log2(4) + (Math.pow(2, 3) - 1) / Math.log2(5);
-    const idcg = (Math.pow(2, 3) - 1) / Math.log2(2) + (Math.pow(2, 2) - 1) / Math.log2(3) + (Math.pow(2, 1) - 1) / Math.log2(4) + 0;
+    const dcg =
+      0 / Math.log2(2) +
+      (Math.pow(2, 1) - 1) / Math.log2(3) +
+      (Math.pow(2, 2) - 1) / Math.log2(4) +
+      (Math.pow(2, 3) - 1) / Math.log2(5);
+    const idcg =
+      (Math.pow(2, 3) - 1) / Math.log2(2) +
+      (Math.pow(2, 2) - 1) / Math.log2(3) +
+      (Math.pow(2, 1) - 1) / Math.log2(4) +
+      0;
     const expected = dcg / idcg;
     const result = ndcg(retrieved, scores);
     expect(result).toBeCloseTo(expected);

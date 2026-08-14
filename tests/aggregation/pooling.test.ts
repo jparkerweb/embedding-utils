@@ -24,7 +24,12 @@ describe('maxPooling', () => {
   });
 
   it('throws ValidationError for mixed dimensions', () => {
-    expect(() => maxPooling([[1, 2], [1, 2, 3]])).toThrow(ValidationError);
+    expect(() =>
+      maxPooling([
+        [1, 2],
+        [1, 2, 3],
+      ])
+    ).toThrow(ValidationError);
   });
 
   it('handles negative values correctly', () => {
@@ -65,7 +70,12 @@ describe('minPooling', () => {
   });
 
   it('throws ValidationError for mixed dimensions', () => {
-    expect(() => minPooling([[1, 2], [1, 2, 3]])).toThrow(ValidationError);
+    expect(() =>
+      minPooling([
+        [1, 2],
+        [1, 2, 3],
+      ])
+    ).toThrow(ValidationError);
   });
 
   it('handles negative values correctly', () => {

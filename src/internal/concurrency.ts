@@ -9,7 +9,7 @@
  */
 export async function promisePool<T>(
   tasks: Array<() => Promise<T>>,
-  maxConcurrency: number,
+  maxConcurrency: number
 ): Promise<T[]> {
   const results = new Array<T>(tasks.length);
   let nextIndex = 0;
@@ -27,10 +27,7 @@ export async function promisePool<T>(
     }
   }
 
-  const workers = Array.from(
-    { length: Math.min(maxConcurrency, tasks.length) },
-    () => runNext(),
-  );
+  const workers = Array.from({ length: Math.min(maxConcurrency, tasks.length) }, () => runNext());
 
   await Promise.all(workers);
   return results;

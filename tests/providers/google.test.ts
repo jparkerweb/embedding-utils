@@ -29,9 +29,7 @@ describe('createGoogleVertexProvider', () => {
   };
 
   const successResponse = {
-    predictions: [
-      { embeddings: { values: [0.1, 0.2, 0.3] } },
-    ],
+    predictions: [{ embeddings: { values: [0.1, 0.2, 0.3] } }],
   };
 
   it('should have correct provider name and dimensions', () => {
@@ -48,7 +46,7 @@ describe('createGoogleVertexProvider', () => {
 
     const [url] = fetchSpy.mock.calls[0];
     expect(url).toBe(
-      'https://us-central1-aiplatform.googleapis.com/v1/projects/my-project/locations/us-central1/publishers/google/models/text-embedding-005:predict',
+      'https://us-central1-aiplatform.googleapis.com/v1/projects/my-project/locations/us-central1/publishers/google/models/text-embedding-005:predict'
     );
   });
 
@@ -105,14 +103,10 @@ describe('createGoogleVertexProvider', () => {
     });
 
     await provider.embed('first');
-    expect(fetchSpy.mock.calls[0][1].headers['Authorization']).toBe(
-      'Bearer dynamic-token-1',
-    );
+    expect(fetchSpy.mock.calls[0][1].headers['Authorization']).toBe('Bearer dynamic-token-1');
 
     await provider.embed('second');
-    expect(fetchSpy.mock.calls[1][1].headers['Authorization']).toBe(
-      'Bearer dynamic-token-2',
-    );
+    expect(fetchSpy.mock.calls[1][1].headers['Authorization']).toBe('Bearer dynamic-token-2');
 
     expect(tokenFn).toHaveBeenCalledTimes(2);
   });
@@ -129,10 +123,7 @@ describe('createGoogleVertexProvider', () => {
 
   it('should handle batch input', async () => {
     const batchResponse = {
-      predictions: [
-        { embeddings: { values: [0.1, 0.2] } },
-        { embeddings: { values: [0.3, 0.4] } },
-      ],
+      predictions: [{ embeddings: { values: [0.1, 0.2] } }, { embeddings: { values: [0.3, 0.4] } }],
     };
     fetchSpy.mockResolvedValue(mockFetchResponse(batchResponse));
 

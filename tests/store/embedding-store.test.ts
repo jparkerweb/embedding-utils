@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { createEmbeddingStore } from '../../src/store/embedding-store';
 import type { EmbeddingProvider, EmbeddingResult } from '../../src/types';
 
@@ -16,7 +16,7 @@ function createMockProvider(): EmbeddingProvider & { embedCalls: number } {
       // Produce deterministic embeddings based on text hash
       const embeddings = inputs.map((text) => {
         const hash = text.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        return [hash % 10 / 10, (hash * 7) % 10 / 10, (hash * 13) % 10 / 10];
+        return [(hash % 10) / 10, ((hash * 7) % 10) / 10, ((hash * 13) % 10) / 10];
       });
       return { embeddings, model: 'mock', dimensions: 3 };
     },

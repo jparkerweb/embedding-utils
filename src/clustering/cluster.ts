@@ -15,10 +15,7 @@ const DEFAULT_CONFIG: Required<ClusteringConfig> = {
   shuffleSeed: 42,
 };
 
-function findMostSimilarPair(
-  clusters: Cluster[],
-  metric: SimilarityMetric,
-): [number, number] {
+function findMostSimilarPair(clusters: Cluster[], metric: SimilarityMetric): [number, number] {
   let bestI = 0;
   let bestJ = 1;
   let bestSim = -Infinity;
@@ -37,9 +34,7 @@ function findMostSimilarPair(
 
 function mergeTwoClusters(a: Cluster, b: Cluster, metric: SimilarityMetric): Cluster {
   const members = [...a.members, ...b.members];
-  const labels = a.labels || b.labels
-    ? [...(a.labels || []), ...(b.labels || [])]
-    : undefined;
+  const labels = a.labels || b.labels ? [...(a.labels || []), ...(b.labels || [])] : undefined;
   return {
     centroid: computeCentroid(members),
     members,
@@ -60,13 +55,13 @@ function mergeTwoClusters(a: Cluster, b: Cluster, metric: SimilarityMetric): Clu
 export function clusterEmbeddings(
   embeddings: Vector[],
   config?: ClusteringConfig,
-  labels?: string[],
+  labels?: string[]
 ): Cluster[] {
   if (embeddings.length === 0) return [];
 
   if (labels && labels.length !== embeddings.length) {
     throw new ValidationError(
-      `Labels length (${labels.length}) must match embeddings length (${embeddings.length})`,
+      `Labels length (${labels.length}) must match embeddings length (${embeddings.length})`
     );
   }
 
@@ -78,7 +73,15 @@ export function clusterEmbeddings(
   if (cfg.minClusterSize < 0) {
     throw new ValidationError(`minClusterSize must be >= 0, got ${cfg.minClusterSize}`);
   }
-  const { similarityThreshold, minClusterSize, maxClusters, metric, assignmentStrategy, shuffle, shuffleSeed } = cfg;
+  const {
+    similarityThreshold,
+    minClusterSize,
+    maxClusters,
+    metric,
+    assignmentStrategy,
+    shuffle,
+    shuffleSeed,
+  } = cfg;
 
   // Convert all inputs to Float32Array up front
   const float32Embeddings = embeddings.map((e) => toFloat32(e));
@@ -192,13 +195,15 @@ export function clusterEmbeddings(
         allLabels.push(...cluster.labels);
       }
     }
-    result = [{
-      centroid: computeCentroid(allMembers),
-      members: allMembers,
-      labels: hasLabels ? allLabels : undefined,
-      size: allMembers.length,
-      cohesion: 1.0,
-    }];
+    result = [
+      {
+        centroid: computeCentroid(allMembers),
+        members: allMembers,
+        labels: hasLabels ? allLabels : undefined,
+        size: allMembers.length,
+        cohesion: 1.0,
+      },
+    ];
   } else {
     result = [];
   }

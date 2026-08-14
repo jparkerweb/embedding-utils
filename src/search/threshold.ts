@@ -24,7 +24,7 @@ export function aboveThreshold(
   query: Vector,
   corpus: Vector[],
   threshold: number,
-  options?: SearchOptions,
+  options?: SearchOptions
 ): SearchResult[] {
   if (!Number.isFinite(threshold)) {
     throw new ValidationError(`threshold must be a finite number, got ${threshold}`);
@@ -36,7 +36,7 @@ export function aboveThreshold(
 
   if (corpus.length > 0 && query.length !== corpus[0].length) {
     throw new DimensionMismatchError(
-      `Query dimension (${query.length}) does not match corpus dimension (${corpus[0].length})`,
+      `Query dimension (${query.length}) does not match corpus dimension (${corpus[0].length})`
     );
   }
 
@@ -70,7 +70,7 @@ export function aboveThreshold(
 export function deduplicate(
   embeddings: Vector[],
   threshold: number,
-  options?: SearchOptions,
+  options?: SearchOptions
 ): { embeddings: Float32Array[]; indices: number[]; labels?: string[] } {
   const metric = options?.metric ?? 'cosine';
   const labels = options?.labels;

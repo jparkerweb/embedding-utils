@@ -52,7 +52,11 @@ export function truncateDimensions(
   }
 
   // Check if input is a batch (array of vectors)
-  if (Array.isArray(input) && input.length > 0 && (Array.isArray(input[0]) || input[0] instanceof Float32Array)) {
+  if (
+    Array.isArray(input) &&
+    input.length > 0 &&
+    (Array.isArray(input[0]) || input[0] instanceof Float32Array)
+  ) {
     const batch = input as Vector[];
     return batch.map((v) => truncateSingle(v, targetDims));
   }
@@ -62,9 +66,7 @@ export function truncateDimensions(
 
 function truncateSingle(v: Vector, targetDims: number): Float32Array {
   if (targetDims > v.length) {
-    throw new ValidationError(
-      `targetDims (${targetDims}) exceeds vector length (${v.length})`
-    );
+    throw new ValidationError(`targetDims (${targetDims}) exceeds vector length (${v.length})`);
   }
   let result: Float32Array;
   if (v instanceof Float32Array) {
@@ -92,7 +94,7 @@ function truncateSingle(v: Vector, targetDims: number): Float32Array {
  */
 export function validateDimensions(
   embeddings: Vector[],
-  expectedDim?: number,
+  expectedDim?: number
 ): { valid: boolean; dimension: number; mismatches: number[] } {
   if (embeddings.length === 0) {
     return { valid: true, dimension: expectedDim ?? 0, mismatches: [] };

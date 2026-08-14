@@ -192,7 +192,7 @@ function splitSentences(text: string): string[] {
  */
 export function chunkByStructure(
   text: string,
-  options?: { maxTokens?: number; overlap?: number },
+  options?: { maxTokens?: number; overlap?: number }
 ): StructuredChunk[] {
   if (!text || text.trim().length === 0) return [];
 
@@ -278,7 +278,11 @@ export function chunkByStructure(
               if (estimateTokens(candidate) > overlap) break;
               overlapText = candidate;
             }
-            currentOffset = block.offset + text.indexOf(currentText, currentOffset - block.offset) + currentText.length - overlapText.length;
+            currentOffset =
+              block.offset +
+              text.indexOf(currentText, currentOffset - block.offset) +
+              currentText.length -
+              overlapText.length;
             currentText = overlapText;
           } else {
             currentOffset = block.offset + block.text.indexOf(sentence, currentText.length);

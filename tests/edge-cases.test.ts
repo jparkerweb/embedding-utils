@@ -1,11 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  cosineSimilarity,
-  topK,
-  aboveThreshold,
-  normalize,
-  ValidationError,
-} from '../src';
+import { cosineSimilarity, topK, aboveThreshold, normalize, ValidationError } from '../src';
 import { validateVector } from '../src/internal/validation';
 
 describe('edge cases', () => {
@@ -87,7 +81,10 @@ describe('edge cases', () => {
     });
 
     it('k equal to corpus.length returns all items', () => {
-      const corpus = [[1, 0], [0, 1]];
+      const corpus = [
+        [1, 0],
+        [0, 1],
+      ];
       const results = topK([1, 0], corpus, 2);
       expect(results).toHaveLength(2);
     });

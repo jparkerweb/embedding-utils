@@ -14,7 +14,9 @@ The sections below are brief summaries. Each links to a detail file in `.agents-
 
 ## Development Commands
 
-`npm run build` (tsup → dual ESM/CJS + dts), `npm test` (vitest run), `npm run test:watch`, `npm run test:coverage`, `npm run lint` (eslint), `npm run format` (prettier). Tests live in `tests/` mirroring `src/`.
+`npm run build` (tsup → dual ESM/CJS + dts), `npm test` (vitest run), `npm run test:watch`, `npm run test:coverage`, `npm run lint` (eslint over `src/` + `tests/`), `npm run format` / `npm run format:check` (prettier), `npm run smoke` (live ONNX, local-only), `npm run engines:check`. Tests live in `tests/` mirroring `src/`. CI (`.github/workflows/ci.yml`) enforces all of these except `smoke`; `package-lock.json` is tracked, so use `npm ci`.
+
+Three temporary `overrides` in `package.json` (`sharp`, `adm-zip`, `esbuild`) hold transitive dependencies at non-vulnerable versions, and TypeScript is held at 6.x. Both have removal conditions documented — read the detail file before changing either.
 
 Details: [Development Commands](./.agents-docs/AGENTS-development-commands.md)
 

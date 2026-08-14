@@ -23,9 +23,7 @@ const MAX_BATCH_SIZE = 5;
  * });
  * const result = await provider.embed('hello world');
  */
-export function createGoogleVertexProvider(
-  config: GoogleVertexConfig,
-): EmbeddingProvider {
+export function createGoogleVertexProvider(config: GoogleVertexConfig): EmbeddingProvider {
   const location = config.location ?? DEFAULT_LOCATION;
   const model = config.model ?? DEFAULT_MODEL;
   const retryConfig = config.retry ?? { maxRetries: 3, baseDelay: 1000, maxDelay: 30000 };
@@ -41,7 +39,7 @@ export function createGoogleVertexProvider(
 
   async function embedBatch(
     batch: string[],
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<{ embeddings: number[][] }> {
     const token = await resolveToken();
     const fetchSignal = createTimeoutSignal(config.timeout, signal);
@@ -70,34 +68,28 @@ export function createGoogleVertexProvider(
           throw new ProviderError(
             `HTTP ${response.status}: ${body}`,
             'google-vertex',
-            response.status,
+            response.status
           );
         }
 
         try {
-          return await response.json() as GoogleVertexEmbeddingResponse;
+          return (await response.json()) as GoogleVertexEmbeddingResponse;
         } catch {
-          throw new ProviderError(
-            'Failed to parse API response',
-            'google-vertex',
-            response.status,
-          );
+          throw new ProviderError('Failed to parse API response', 'google-vertex', response.status);
         }
       },
       retryConfig,
-      signal,
+      signal
     );
 
     if (!Array.isArray(result.predictions) || !result.predictions[0]?.embeddings?.values) {
       throw new ProviderError(
         'Unexpected API response structure from google-vertex',
-        'google-vertex',
+        'google-vertex'
       );
     }
 
-    const embeddings = result.predictions.map(
-      (p) => p.embeddings.values,
-    );
+    const embeddings = result.predictions.map((p) => p.embeddings.values);
     return { embeddings };
   }
 
@@ -105,10 +97,7 @@ export function createGoogleVertexProvider(
     name: 'google-vertex',
     dimensions: config.retry ? null : null,
 
-    async embed(
-      input: string | string[],
-      options?: EmbedOptions,
-    ): Promise<EmbeddingResult> {
+    async embed(input: string | string[], options?: EmbedOptions): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
       for (const text of inputs) {
         if (text.trim().length === 0) {

@@ -10,7 +10,7 @@ function makeCluster2D(
   cy: number,
   count: number,
   spread: number,
-  seed: number,
+  seed: number
 ): number[][] {
   const pts: number[][] = [];
   let s = seed;
@@ -32,7 +32,7 @@ function makeRing2D(
   radius: number,
   count: number,
   noise: number,
-  seed: number,
+  seed: number
 ): number[][] {
   const pts: number[][] = [];
   let s = seed;
@@ -106,7 +106,10 @@ describe('hdbscan — noise detection', () => {
     // Use multiple clusters + outliers so the outliers don't get absorbed
     const cluster1 = makeCluster2D(0, 0, 15, 0.3, 1);
     const cluster2 = makeCluster2D(10, 0, 15, 0.3, 2);
-    const outliers: number[][] = [[100, 100], [-100, -100]];
+    const outliers: number[][] = [
+      [100, 100],
+      [-100, -100],
+    ];
     const embeddings = [...cluster1, ...cluster2, ...outliers];
     const result = hdbscan(embeddings, { minClusterSize: 5 });
 
@@ -117,7 +120,10 @@ describe('hdbscan — noise detection', () => {
 
   it('noise points are NOT in any cluster members', () => {
     const cluster = makeCluster2D(0, 0, 20, 0.3, 1);
-    const outliers: number[][] = [[100, 100], [-100, -100]];
+    const outliers: number[][] = [
+      [100, 100],
+      [-100, -100],
+    ];
     const embeddings = [...cluster, ...outliers];
     const result = hdbscan(embeddings, { minClusterSize: 5 });
 
@@ -178,10 +184,7 @@ describe('hdbscan — edge cases', () => {
   });
 
   it('minSamples affects core distance computation', () => {
-    const embeddings = [
-      ...makeCluster2D(0, 0, 20, 0.5, 1),
-      ...makeCluster2D(10, 0, 20, 0.5, 2),
-    ];
+    const embeddings = [...makeCluster2D(0, 0, 20, 0.5, 1), ...makeCluster2D(10, 0, 20, 0.5, 2)];
     const result1 = hdbscan(embeddings, { minClusterSize: 5, minSamples: 3 });
     const result2 = hdbscan(embeddings, { minClusterSize: 5, minSamples: 15 });
     // Different minSamples should potentially produce different results
@@ -195,10 +198,7 @@ describe('hdbscan — edge cases', () => {
 
 describe('hdbscan — label preservation', () => {
   it('preserves string labels in cluster members', () => {
-    const embeddings = [
-      ...makeCluster2D(0, 0, 10, 0.3, 1),
-      ...makeCluster2D(10, 0, 10, 0.3, 2),
-    ];
+    const embeddings = [...makeCluster2D(0, 0, 10, 0.3, 1), ...makeCluster2D(10, 0, 10, 0.3, 2)];
     const labels = embeddings.map((_, i) => `point-${i}`);
     const result = hdbscan(embeddings, { minClusterSize: 5, labels });
 
@@ -230,7 +230,7 @@ describe('hdbscan — label preservation', () => {
   it('throws ValidationError for labels length mismatch', () => {
     const embeddings = makeCluster2D(0, 0, 10, 0.3, 1);
     expect(() => hdbscan(embeddings, { minClusterSize: 5, labels: ['a', 'b'] })).toThrow(
-      ValidationError,
+      ValidationError
     );
   });
 });
@@ -239,10 +239,7 @@ describe('hdbscan — label preservation', () => {
 
 describe('hdbscan — metric support', () => {
   it('default metric is euclidean', () => {
-    const embeddings = [
-      ...makeCluster2D(0, 0, 15, 0.3, 1),
-      ...makeCluster2D(10, 0, 15, 0.3, 2),
-    ];
+    const embeddings = [...makeCluster2D(0, 0, 15, 0.3, 1), ...makeCluster2D(10, 0, 15, 0.3, 2)];
     const defaultResult = hdbscan(embeddings, { minClusterSize: 5 });
     const euclideanResult = hdbscan(embeddings, { minClusterSize: 5, metric: 'euclidean' });
     expect(defaultResult.labels).toEqual(euclideanResult.labels);

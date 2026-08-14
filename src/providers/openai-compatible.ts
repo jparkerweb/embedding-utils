@@ -33,9 +33,7 @@ function extractProviderName(baseUrl: string): string {
  * });
  * const result = await provider.embed(['hello', 'world']);
  */
-export function createOpenAICompatibleProvider(
-  config: OpenAICompatibleConfig,
-): EmbeddingProvider {
+export function createOpenAICompatibleProvider(config: OpenAICompatibleConfig): EmbeddingProvider {
   const baseUrl = config.baseUrl ?? DEFAULT_BASE_URL;
   const maxBatchSize = config.maxBatchSize ?? DEFAULT_MAX_BATCH_SIZE;
   const retryConfig = config.retry ?? { maxRetries: 3, baseDelay: 1000, maxDelay: 30000 };
@@ -44,7 +42,7 @@ export function createOpenAICompatibleProvider(
 
   async function embedBatch(
     batch: string[],
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<{ embeddings: number[][]; tokens: number }> {
     const fetchSignal = createTimeoutSignal(config.timeout, signal);
     const result = await retryWithBackoff(
@@ -77,28 +75,24 @@ export function createOpenAICompatibleProvider(
           throw new ProviderError(
             `HTTP ${response.status}: ${body}`,
             providerName,
-            response.status,
+            response.status
           );
         }
 
         try {
-          return await response.json() as OpenAIEmbeddingResponse;
+          return (await response.json()) as OpenAIEmbeddingResponse;
         } catch {
-          throw new ProviderError(
-            'Failed to parse API response',
-            providerName,
-            response.status,
-          );
+          throw new ProviderError('Failed to parse API response', providerName, response.status);
         }
       },
       retryConfig,
-      signal,
+      signal
     );
 
     if (!Array.isArray(result.data) || !result.data[0]?.embedding) {
       throw new ProviderError(
         'Unexpected API response structure from openai-compatible',
-        providerName,
+        providerName
       );
     }
 
@@ -111,10 +105,7 @@ export function createOpenAICompatibleProvider(
     name: providerName,
     dimensions: config.dimensions ?? null,
 
-    async embed(
-      input: string | string[],
-      options?: EmbedOptions,
-    ): Promise<EmbeddingResult> {
+    async embed(input: string | string[], options?: EmbedOptions): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
       for (const text of inputs) {
         if (text.trim().length === 0) {

@@ -8,10 +8,7 @@ import { createLRUCache } from '../storage/cache';
  * @param options - Cache configuration (maxSize, ttl, hashFunction)
  * @returns A new EmbeddingProvider that caches results from the wrapped provider
  */
-export function withCache(
-  provider: EmbeddingProvider,
-  options?: CacheOptions,
-): EmbeddingProvider {
+export function withCache(provider: EmbeddingProvider, options?: CacheOptions): EmbeddingProvider {
   const cache = createLRUCache({
     maxSize: options?.maxSize ?? 1000,
     ttl: options?.ttl,
@@ -31,10 +28,7 @@ export function withCache(
     name: provider.name,
     dimensions: provider.dimensions,
 
-    async embed(
-      input: string | string[],
-      options?: EmbedOptions,
-    ): Promise<EmbeddingResult> {
+    async embed(input: string | string[], options?: EmbedOptions): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
       const key = buildKey(inputs, options?.dimensions);
 

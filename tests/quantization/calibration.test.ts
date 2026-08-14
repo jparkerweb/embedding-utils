@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { calibrate, calibratedQuantize, calibratedDequantize } from '../../src/quantization/calibration';
+import {
+  calibrate,
+  calibratedQuantize,
+  calibratedDequantize,
+} from '../../src/quantization/calibration';
 import { quantize, dequantize } from '../../src/quantization/quantize';
 import { ValidationError } from '../../src/types';
 

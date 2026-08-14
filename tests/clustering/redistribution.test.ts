@@ -14,8 +14,8 @@ describe('cluster redistribution edge cases', () => {
     ];
 
     const clusters = clusterEmbeddings(embeddings, {
-      similarityThreshold: 0.95,  // very high so each gets its own cluster initially
-      minClusterSize: 10,         // larger than total count, forcing all-small path
+      similarityThreshold: 0.95, // very high so each gets its own cluster initially
+      minClusterSize: 10, // larger than total count, forcing all-small path
       maxClusters: 5,
     });
 
@@ -27,9 +27,9 @@ describe('cluster redistribution edge cases', () => {
   it('preserves all members after redistribution', () => {
     const embeddings = [
       [1, 0, 0],
-      [0.99, 0.01, 0],   // close to first
-      [0.98, 0.02, 0],   // close to first
-      [0, 1, 0],          // outlier, will be in small cluster
+      [0.99, 0.01, 0], // close to first
+      [0.98, 0.02, 0], // close to first
+      [0, 1, 0], // outlier, will be in small cluster
     ];
 
     const clusters = clusterEmbeddings(embeddings, {
@@ -52,7 +52,7 @@ describe('cluster redistribution edge cases', () => {
 
     const clusters = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.99, // very high — likely one per cluster
-      minClusterSize: 1,         // no redistribution needed
+      minClusterSize: 1, // no redistribution needed
       maxClusters: 10,
     });
 
@@ -68,7 +68,7 @@ describe('cluster redistribution edge cases', () => {
       [1, 0, 0],
       [0.98, 0.02, 0],
       [0.97, 0.03, 0],
-      [0, 0, 1],         // outlier
+      [0, 0, 1], // outlier
     ];
 
     const clusters = clusterEmbeddings(embeddings, {

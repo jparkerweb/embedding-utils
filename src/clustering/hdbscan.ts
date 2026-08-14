@@ -69,9 +69,9 @@ interface MSTEdge {
 
 /** An entry in the condensed tree. */
 interface CondensedTreeEntry {
-  parent: number;    // condensed cluster ID
-  child: number;     // point index (if childSize===1) or condensed cluster ID
-  lambda: number;    // 1/distance at which this separation happens
+  parent: number; // condensed cluster ID
+  child: number; // point index (if childSize===1) or condensed cluster ID
+  lambda: number; // 1/distance at which this separation happens
   childSize: number; // 1 for individual point, >1 for sub-cluster
 }
 
@@ -107,7 +107,11 @@ function computeDistanceMatrix(embeddings: Vector[], distFn: DistanceFn): Float6
   return matrix;
 }
 
-function computeCoreDistances(distMatrix: Float64Array, n: number, minSamples: number): Float64Array {
+function computeCoreDistances(
+  distMatrix: Float64Array,
+  n: number,
+  minSamples: number
+): Float64Array {
   const coreDistances = new Float64Array(n);
   const k = Math.min(minSamples, n - 1);
 
@@ -125,7 +129,7 @@ function computeCoreDistances(distMatrix: Float64Array, n: number, minSamples: n
 function computeMutualReachabilityMatrix(
   distMatrix: Float64Array,
   coreDistances: Float64Array,
-  n: number,
+  n: number
 ): Float64Array {
   const mrd = new Float64Array(n * n);
   for (let i = 0; i < n; i++) {
@@ -231,7 +235,7 @@ class UnionFind {
 function buildCondensedTree(
   edges: MSTEdge[],
   n: number,
-  minClusterSize: number,
+  minClusterSize: number
 ): CondensedTreeEntry[] {
   // Step 1: Build single-linkage hierarchy
   const uf = new UnionFind(n);
@@ -331,9 +335,7 @@ function buildCondensedTree(
  *
  * Returns the set of point indices for each selected cluster.
  */
-function extractClusters(
-  condensedTree: CondensedTreeEntry[],
-): number[][] {
+function extractClusters(condensedTree: CondensedTreeEntry[]): number[][] {
   if (condensedTree.length === 0) return [];
 
   // Identify all condensed cluster IDs
@@ -508,7 +510,7 @@ export function hdbscan(embeddings: Vector[], options: HDBSCANOptions = {}): HDB
   // Validate labels length
   if (inputLabels && inputLabels.length !== embeddings.length) {
     throw new ValidationError(
-      `Labels length (${inputLabels.length}) must match embeddings length (${embeddings.length})`,
+      `Labels length (${inputLabels.length}) must match embeddings length (${embeddings.length})`
     );
   }
 

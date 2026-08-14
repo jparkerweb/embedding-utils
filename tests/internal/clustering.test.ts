@@ -3,7 +3,10 @@ import { computeCentroid, computePairwiseCohesion } from '../../src/internal/clu
 
 describe('computeCentroid', () => {
   it('computes mean of known vectors', () => {
-    const centroid = computeCentroid([[1, 0], [0, 1]]);
+    const centroid = computeCentroid([
+      [1, 0],
+      [0, 1],
+    ]);
     expect(centroid).toBeInstanceOf(Float32Array);
     expect(Array.from(centroid)).toEqual([0.5, 0.5]);
   });
@@ -15,7 +18,11 @@ describe('computeCentroid', () => {
   });
 
   it('computes centroid of three vectors', () => {
-    const centroid = computeCentroid([[1, 2, 3], [4, 5, 6], [7, 8, 9]]);
+    const centroid = computeCentroid([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
     expect(centroid).toBeInstanceOf(Float32Array);
     expect(Array.from(centroid)).toEqual([4, 5, 6]);
   });
@@ -23,12 +30,25 @@ describe('computeCentroid', () => {
 
 describe('computePairwiseCohesion', () => {
   it('returns 1.0 for identical vectors with cosine metric', () => {
-    const cohesion = computePairwiseCohesion([[1, 0], [1, 0], [1, 0]], 'cosine');
+    const cohesion = computePairwiseCohesion(
+      [
+        [1, 0],
+        [1, 0],
+        [1, 0],
+      ],
+      'cosine'
+    );
     expect(cohesion).toBeCloseTo(1.0);
   });
 
   it('returns 0.0 for orthogonal vectors with cosine metric', () => {
-    const cohesion = computePairwiseCohesion([[1, 0], [0, 1]], 'cosine');
+    const cohesion = computePairwiseCohesion(
+      [
+        [1, 0],
+        [0, 1],
+      ],
+      'cosine'
+    );
     expect(cohesion).toBeCloseTo(0.0);
   });
 

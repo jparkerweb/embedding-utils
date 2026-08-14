@@ -4,10 +4,10 @@ import { rankBySimilarity } from '../../src/search/rank';
 describe('rankBySimilarity', () => {
   const query = [1, 0, 0];
   const corpus = [
-    [0, 1, 0],     // orthogonal
-    [1, 0, 0],     // identical
+    [0, 1, 0], // orthogonal
+    [1, 0, 0], // identical
     [0.9, 0.1, 0], // very similar
-    [-1, 0, 0],    // opposite
+    [-1, 0, 0], // opposite
   ];
 
   it('ranks corpus by similarity descending', () => {

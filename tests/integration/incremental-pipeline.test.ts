@@ -12,7 +12,7 @@ describe('integration: IncrementalClusterer pipeline', () => {
     // Group A: near [1, 0, 0]
     const groupA = [
       [0.95, 0.05, 0.0],
-      [0.90, 0.10, 0.0],
+      [0.9, 0.1, 0.0],
       [0.92, 0.08, 0.0],
       [0.88, 0.12, 0.0],
       [0.93, 0.07, 0.0],
@@ -21,7 +21,7 @@ describe('integration: IncrementalClusterer pipeline', () => {
     // Group B: near [0, 1, 0]
     const groupB = [
       [0.05, 0.95, 0.0],
-      [0.10, 0.90, 0.0],
+      [0.1, 0.9, 0.0],
       [0.08, 0.92, 0.0],
       [0.12, 0.88, 0.0],
       [0.07, 0.93, 0.0],
@@ -37,9 +37,6 @@ describe('integration: IncrementalClusterer pipeline', () => {
 
     const beforeRebalance = clusterer.getClusters();
     expect(beforeRebalance.length).toBeGreaterThanOrEqual(2);
-
-    // Record cohesion before rebalance
-    const cohesionBefore = beforeRebalance.map((c) => c.cohesion);
 
     // Rebalance
     clusterer.rebalance();

@@ -12,7 +12,7 @@
 export function chunkByTokenCount(
   text: string,
   maxTokens: number,
-  options?: { overlap?: number; separator?: string },
+  options?: { overlap?: number; separator?: string }
 ): string[] {
   if (!text) return [];
 
@@ -51,19 +51,17 @@ export function chunkByTokenCount(
  */
 export function chunkBySentence(
   text: string,
-  options?: { maxTokens?: number; overlap?: number },
+  options?: { maxTokens?: number; overlap?: number }
 ): string[] {
   if (!text) return [];
 
   if (typeof Intl === 'undefined' || !('Segmenter' in Intl)) {
-    throw new Error(
-      'chunkBySentence requires Intl.Segmenter (Node 16+ or modern browser)',
-    );
+    throw new Error('chunkBySentence requires Intl.Segmenter (Node 16+ or modern browser)');
   }
 
   const segmenter = new Intl.Segmenter(undefined, { granularity: 'sentence' });
   const sentences = Array.from(segmenter.segment(text), (s) => s.segment).filter(
-    (s) => s.trim().length > 0,
+    (s) => s.trim().length > 0
   );
 
   if (sentences.length === 0) return [];

@@ -75,10 +75,7 @@ describe('truncateDimensions (batch)', () => {
   });
 
   it('accepts Float32Array batch', () => {
-    const batch = [
-      new Float32Array([1, 2, 3]),
-      new Float32Array([4, 5, 6]),
-    ];
+    const batch = [new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6])];
     const result = truncateDimensions(batch, 2);
     expect(result).toHaveLength(2);
     expect(result[0]).toHaveLength(2);
@@ -139,21 +136,35 @@ describe('truncateDimensions auto-normalize', () => {
 
 describe('validateDimensions', () => {
   it('returns valid for consistent dimensions', () => {
-    const result = validateDimensions([[1, 2], [3, 4], [5, 6]]);
+    const result = validateDimensions([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+    ]);
     expect(result.valid).toBe(true);
     expect(result.dimension).toBe(2);
     expect(result.mismatches).toEqual([]);
   });
 
   it('returns invalid with correct mismatch indices', () => {
-    const result = validateDimensions([[1, 2], [3, 4, 5], [6, 7]]);
+    const result = validateDimensions([
+      [1, 2],
+      [3, 4, 5],
+      [6, 7],
+    ]);
     expect(result.valid).toBe(false);
     expect(result.dimension).toBe(2);
     expect(result.mismatches).toEqual([1]);
   });
 
   it('validates against expectedDim', () => {
-    const result = validateDimensions([[1, 2], [3, 4]], 3);
+    const result = validateDimensions(
+      [
+        [1, 2],
+        [3, 4],
+      ],
+      3
+    );
     expect(result.valid).toBe(false);
     expect(result.dimension).toBe(3);
     expect(result.mismatches).toEqual([0, 1]);

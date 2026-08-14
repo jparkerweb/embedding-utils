@@ -36,22 +36,37 @@ describe('registerModel', () => {
 
   it('rejects empty model ID', () => {
     expect(() =>
-      registerModel({ id: '', dimensions: 128, maxTokens: 256, description: 'bad' }),
+      registerModel({ id: '', dimensions: 128, maxTokens: 256, description: 'bad' })
     ).toThrow(ValidationError);
   });
 
   it('rejects non-positive dimensions', () => {
     expect(() =>
-      registerModel({ id: 'test-org/another-model', dimensions: 0, maxTokens: 256, description: 'bad' }),
+      registerModel({
+        id: 'test-org/another-model',
+        dimensions: 0,
+        maxTokens: 256,
+        description: 'bad',
+      })
     ).toThrow(ValidationError);
     expect(() =>
-      registerModel({ id: 'test-org/another-model', dimensions: -1, maxTokens: 256, description: 'bad' }),
+      registerModel({
+        id: 'test-org/another-model',
+        dimensions: -1,
+        maxTokens: 256,
+        description: 'bad',
+      })
     ).toThrow(ValidationError);
   });
 
   it('rejects non-integer dimensions', () => {
     expect(() =>
-      registerModel({ id: 'test-org/another-model', dimensions: 3.5, maxTokens: 256, description: 'bad' }),
+      registerModel({
+        id: 'test-org/another-model',
+        dimensions: 3.5,
+        maxTokens: 256,
+        description: 'bad',
+      })
     ).toThrow(ValidationError);
   });
 });

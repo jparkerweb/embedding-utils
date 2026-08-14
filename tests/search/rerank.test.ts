@@ -8,8 +8,8 @@ describe('rerankResults', () => {
     // Result at index 1 has high original score but low actual similarity
     // Result at index 0 has low original score but high actual similarity
     const results = [
-      { index: 0, score: 0.1, embedding: [1, 0, 0] },    // low original, high cosine sim (1.0)
-      { index: 1, score: 0.9, embedding: [0, 1, 0] },    // high original, low cosine sim (0.0)
+      { index: 0, score: 0.1, embedding: [1, 0, 0] }, // low original, high cosine sim (1.0)
+      { index: 1, score: 0.9, embedding: [0, 1, 0] }, // high original, low cosine sim (0.0)
     ];
 
     const reranked = rerankResults(results, query);
@@ -34,9 +34,7 @@ describe('rerankResults', () => {
   });
 
   it('default weights are 0.5/0.5', () => {
-    const results = [
-      { index: 0, score: 0.6, embedding: [1, 0, 0] },
-    ];
+    const results = [{ index: 0, score: 0.6, embedding: [1, 0, 0] }];
     const reranked = rerankResults(results, query);
     // 0.5 * 0.6 + 0.5 * 1.0 = 0.8
     expect(reranked[0].score).toBeCloseTo(0.8);

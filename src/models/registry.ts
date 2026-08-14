@@ -102,8 +102,7 @@ export const MODEL_REGISTRY: Record<string, ModelInfo> = {
     id: 'onnx-community/gte-multilingual-base',
     dimensions: 768,
     maxTokens: 8192,
-    description:
-      'GTE multilingual base (70+ languages), long-context, Matryoshka-truncatable',
+    description: 'GTE multilingual base (70+ languages), long-context, Matryoshka-truncatable',
     size: '305M',
     pooling: 'cls',
   },
@@ -298,10 +297,7 @@ export const MODEL_REGISTRY: Record<string, ModelInfo> = {
  * @example
  * registerModel({ id: 'my-org/custom-model', dimensions: 512, maxTokens: 1024, description: 'Custom model' });
  */
-export function registerModel(
-  info: ModelInfo,
-  options?: { overwrite?: boolean },
-): void {
+export function registerModel(info: ModelInfo, options?: { overwrite?: boolean }): void {
   if (!info.id || typeof info.id !== 'string') {
     throw new ValidationError('Model id must be a non-empty string');
   }
@@ -310,7 +306,7 @@ export function registerModel(
   }
   if (MODEL_REGISTRY[info.id] && !options?.overwrite) {
     throw new ValidationError(
-      `Model "${info.id}" is already registered. Pass { overwrite: true } to replace it.`,
+      `Model "${info.id}" is already registered. Pass { overwrite: true } to replace it.`
     );
   }
   MODEL_REGISTRY[info.id] = info;
@@ -326,7 +322,7 @@ export function registerModel(
  * getRecommendedModel('multilingual'); // multilingual-MiniLM-L12-v2
  */
 export function getRecommendedModel(
-  useCase: 'speed' | 'balanced' | 'quality' | 'multilingual',
+  useCase: 'speed' | 'balanced' | 'quality' | 'multilingual'
 ): ModelInfo {
   switch (useCase) {
     case 'speed':

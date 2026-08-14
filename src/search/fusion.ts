@@ -13,10 +13,7 @@ import { ValidationError } from '../types';
  * @returns Merged list sorted by fused RRF score descending
  * @throws {ValidationError} If lists is empty array of non-arrays
  */
-export function fuseRankedLists(
-  lists: RankedItem[][],
-  options?: { k?: number },
-): RankedItem[] {
+export function fuseRankedLists(lists: RankedItem[][], options?: { k?: number }): RankedItem[] {
   if (lists.length === 0) return [];
 
   const k = options?.k ?? 60;

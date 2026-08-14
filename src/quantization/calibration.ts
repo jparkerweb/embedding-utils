@@ -68,12 +68,12 @@ export function calibrate(embeddings: Vector[]): QuantizationCalibration {
  */
 export function calibratedQuantize(
   embedding: Vector,
-  calibration: QuantizationCalibration,
+  calibration: QuantizationCalibration
 ): Uint8Array {
   const v = toFloat32(embedding);
   if (v.length !== calibration.dimensions) {
     throw new ValidationError(
-      `Embedding dimensions (${v.length}) do not match calibration dimensions (${calibration.dimensions})`,
+      `Embedding dimensions (${v.length}) do not match calibration dimensions (${calibration.dimensions})`
     );
   }
 
@@ -100,11 +100,11 @@ export function calibratedQuantize(
  */
 export function calibratedDequantize(
   data: Uint8Array,
-  calibration: QuantizationCalibration,
+  calibration: QuantizationCalibration
 ): Float32Array {
   if (data.length !== calibration.dimensions) {
     throw new ValidationError(
-      `Data dimensions (${data.length}) do not match calibration dimensions (${calibration.dimensions})`,
+      `Data dimensions (${data.length}) do not match calibration dimensions (${calibration.dimensions})`
     );
   }
 

@@ -17,8 +17,14 @@ describe('pairwiseSimilarity', () => {
   });
 
   it('computes element-wise similarity', () => {
-    const listA = [[1, 0, 0], [0, 1, 0]];
-    const listB = [[0, 1, 0], [0, 1, 0]];
+    const listA = [
+      [1, 0, 0],
+      [0, 1, 0],
+    ];
+    const listB = [
+      [0, 1, 0],
+      [0, 1, 0],
+    ];
     const scores = pairwiseSimilarity(listA, listB);
     expect(scores).toHaveLength(2);
     expect(scores[0]).toBeCloseTo(0); // orthogonal
@@ -26,7 +32,10 @@ describe('pairwiseSimilarity', () => {
   });
 
   it('throws ValidationError for different lengths', () => {
-    const listA = [[1, 0], [0, 1]];
+    const listA = [
+      [1, 0],
+      [0, 1],
+    ];
     const listB = [[1, 0]];
     expect(() => pairwiseSimilarity(listA, listB)).toThrow(ValidationError);
   });

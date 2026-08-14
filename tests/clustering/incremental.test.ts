@@ -51,6 +51,11 @@ describe('IncrementalClusterer', () => {
     // Should still have reasonable clusters after rebalance
     expect(afterRebalance.length).toBeGreaterThanOrEqual(1);
     expect(afterRebalance.length).toBeLessThanOrEqual(2);
+
+    // Rebalance redistributes members without dropping any
+    const membersBefore = beforeRebalance.reduce((sum, c) => sum + c.size, 0);
+    const membersAfter = afterRebalance.reduce((sum, c) => sum + c.size, 0);
+    expect(membersAfter).toBe(membersBefore);
   });
 
   it('getStats returns per-cluster statistics', () => {
@@ -71,8 +76,12 @@ describe('IncrementalClusterer', () => {
   it('addBatch adds multiple embeddings', () => {
     const clusterer = new IncrementalClusterer({ similarityThreshold: 0.8 });
     clusterer.addBatch(
-      [[1, 0, 0], [0.99, 0.01, 0], [0, 1, 0]],
-      ['a', 'b', 'c'],
+      [
+        [1, 0, 0],
+        [0.99, 0.01, 0],
+        [0, 1, 0],
+      ],
+      ['a', 'b', 'c']
     );
     expect(clusterer.size).toBe(3);
     const clusters = clusterer.getClusters();

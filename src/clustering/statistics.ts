@@ -10,7 +10,7 @@ import { computeScore, computeDistance } from '../internal/metrics';
  */
 export function clusterStats(
   cluster: { centroid: Vector; members: Vector[] },
-  metric: SimilarityMetric = 'cosine',
+  metric: SimilarityMetric = 'cosine'
 ): ClusterStats {
   const { centroid, members } = cluster;
 
@@ -65,7 +65,7 @@ export function clusterStats(
  */
 export function detectOutliers(
   cluster: { centroid: Vector; members: Vector[] },
-  options?: { threshold?: number; metric?: SimilarityMetric },
+  options?: { threshold?: number; metric?: SimilarityMetric }
 ): number[] {
   const metric = options?.metric ?? 'cosine';
   const threshold = options?.threshold ?? 2;
@@ -100,7 +100,7 @@ export function detectOutliers(
 export function centroidDrift(
   oldCentroid: Vector,
   newCentroid: Vector,
-  metric: SimilarityMetric = 'cosine',
+  metric: SimilarityMetric = 'cosine'
 ): number {
   return computeDistance(oldCentroid, newCentroid, metric);
 }
