@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+  schedule:
+    # Weekly, so new advisories surface on their own schedule instead of
+    # failing an unrelated pull request.
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: verify (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor is 20, not the `engines.node` floor of 18, because the dev
+        # toolchain requires it: vitest 4 needs ^20 || ^22 || >=24 and eslint 10
+        # needs ^20.19 || ^22.13 || >=24. The `engines` claim is covered by the
+        # engines-floor job below instead.
+        node: ['20', '22', '24']
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # --ignore-scripts skips the onnxruntime-node and sharp postinstalls,
+      # which download hundreds of MB of native binaries. Nothing below needs
+      # them: the suite mocks providers, and the local ONNX provider is only
+      # exercised by `npm run smoke`, which is deliberately not run here since
+      # it downloads models from HuggingFace.
+      - run: npm ci --ignore-scripts
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  engines-floor:
+    name: engines floor (node 18)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Build on a modern Node, since the toolchain cannot run on 18...
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+
+      # ...then run the built artifact on the oldest Node that engines.node
+      # claims to support. The package has no runtime dependencies, so this
+      # needs nothing installed. Keep this in step with engines.node.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '18'
+      - run: npm run engines:check
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      # Audits the committed lockfile. Fails on high and critical only; moderate
+      # and below in dev-only transitive dependencies should not block a merge.
+      - run: npm audit --audit-level=high
