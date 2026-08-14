@@ -66,7 +66,10 @@ describe('binary format v2', () => {
 describe('v1 backward compatibility', () => {
   it('deserializes v1 binary data (no version byte)', () => {
     // Manually craft v1 binary: [count:u32LE][dims:u32LE][float32LE * dims] per embedding
-    const embs = [[1.0, 2.0], [3.0, 4.0]];
+    const embs = [
+      [1.0, 2.0],
+      [3.0, 4.0],
+    ];
     const totalBytes = 4 + embs.length * (4 + embs[0].length * 4);
     const buffer = new ArrayBuffer(totalBytes);
     const view = new DataView(buffer);

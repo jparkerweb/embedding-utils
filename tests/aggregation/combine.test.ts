@@ -17,10 +17,7 @@ function createMockProvider(embeddings: Float32Array[]): EmbeddingProvider {
 
 describe('combineEmbeddings', () => {
   it('should combine multiple texts into single averaged embedding', async () => {
-    const provider = createMockProvider([
-      new Float32Array([1, 2, 3]),
-      new Float32Array([3, 4, 5]),
-    ]);
+    const provider = createMockProvider([new Float32Array([1, 2, 3]), new Float32Array([3, 4, 5])]);
 
     const result = await combineEmbeddings(['hello', 'world'], provider);
 
@@ -30,10 +27,7 @@ describe('combineEmbeddings', () => {
   });
 
   it('should use custom aggregation function', async () => {
-    const provider = createMockProvider([
-      new Float32Array([1, 2, 3]),
-      new Float32Array([4, 5, 6]),
-    ]);
+    const provider = createMockProvider([new Float32Array([1, 2, 3]), new Float32Array([4, 5, 6])]);
 
     // Use max pooling as custom aggregation
     const maxPool = (embeddings: (number[] | Float32Array)[]): Float32Array => {

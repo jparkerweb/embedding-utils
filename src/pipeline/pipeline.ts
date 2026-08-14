@@ -83,7 +83,7 @@ class Semaphore {
  */
 export function createEmbeddingPipeline(
   provider: EmbeddingProvider,
-  options: PipelineOptions = {},
+  options: PipelineOptions = {}
 ): EmbeddingPipeline {
   const {
     batchSize = 100,
@@ -207,7 +207,7 @@ export function createEmbeddingPipeline(
 async function saveCheckpoint(
   checkpoint: CheckpointAdapter,
   completedIds: Set<string>,
-  totalProcessed: number,
+  totalProcessed: number
 ): Promise<void> {
   await checkpoint.save({
     completedIds: [...completedIds],

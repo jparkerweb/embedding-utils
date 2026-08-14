@@ -10,7 +10,7 @@ const DEFAULT_TIMEOUT = 30000;
  */
 export function createTimeoutSignal(
   timeoutMs: number | undefined,
-  userSignal?: AbortSignal,
+  userSignal?: AbortSignal
 ): AbortSignal {
   const timeout = timeoutMs ?? DEFAULT_TIMEOUT;
   const timeoutSignal = AbortSignal.timeout(timeout);
@@ -25,15 +25,11 @@ export function createTimeoutSignal(
  * Wraps a provider operation and converts timeout DOMException into ProviderError.
  * @internal
  */
-export function wrapTimeoutError(
-  error: unknown,
-  providerName: string,
-  timeoutMs?: number,
-): never {
+export function wrapTimeoutError(error: unknown, providerName: string, timeoutMs?: number): never {
   if (error instanceof DOMException && error.name === 'TimeoutError') {
     throw new ProviderError(
       `Request timed out after ${timeoutMs ?? DEFAULT_TIMEOUT}ms`,
-      providerName,
+      providerName
     );
   }
   throw error;
@@ -59,7 +55,7 @@ function isRetryable(error: unknown): boolean {
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   config: RetryConfig,
-  signal?: AbortSignal,
+  signal?: AbortSignal
 ): Promise<T> {
   const maxRetries = config.maxRetries ?? 3;
   const baseDelay = config.baseDelay ?? 1000;
@@ -114,7 +110,7 @@ export async function autoBatch(
   inputs: string[],
   batchSize: number,
   fn: (batch: string[]) => Promise<number[][]>,
-  config?: BatchConfig,
+  config?: BatchConfig
 ): Promise<number[][]> {
   if (inputs.length === 0) return [];
 

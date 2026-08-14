@@ -46,8 +46,16 @@ describe('getPreset', () => {
 
   it('presets work with clusterEmbeddings', () => {
     const embeddings = [
-      [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
-      [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
     ];
     const preset = getPreset('balanced');
     const clusters = clusterEmbeddings(embeddings, preset);

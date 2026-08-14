@@ -32,7 +32,7 @@ const ALIAS_BASE_URLS: Record<string, string> = {
  */
 export function createProvider<T extends ProviderType>(
   type: T,
-  config: ProviderConfigMap[T],
+  config: ProviderConfigMap[T]
 ): EmbeddingProvider {
   switch (type) {
     case 'local':

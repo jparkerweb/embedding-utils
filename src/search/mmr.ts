@@ -14,7 +14,7 @@ export function mmrSearch(
   query: Vector,
   corpus: Vector[],
   k: number,
-  options?: MMROptions,
+  options?: MMROptions
 ): Array<{ index: number; score: number }> {
   const metric = options?.metric ?? 'cosine';
   const lambda = options?.lambda ?? 0.5;

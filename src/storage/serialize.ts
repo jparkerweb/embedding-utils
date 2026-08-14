@@ -135,7 +135,7 @@ function fromBinaryV2(data: Uint8Array): DeserializeResult {
     offset += 4;
     const decoder = new TextDecoder();
     metadata = JSON.parse(
-      decoder.decode(new Uint8Array(data.buffer, data.byteOffset + offset, metadataLength)),
+      decoder.decode(new Uint8Array(data.buffer, data.byteOffset + offset, metadataLength))
     );
     offset += metadataLength;
   }
@@ -169,16 +169,14 @@ function fromBinaryV2(data: Uint8Array): DeserializeResult {
 export function serialize(
   embeddings: Vector[],
   format: SerializeFormat,
-  metadata?: SerializationMetadata,
+  metadata?: SerializationMetadata
 ): string | Uint8Array {
   validateEmbeddings(embeddings);
 
   switch (format) {
     case 'json':
       // For JSON, convert Float32Array to regular arrays for proper JSON serialization
-      return JSON.stringify(embeddings.map((e) =>
-        e instanceof Float32Array ? Array.from(e) : e,
-      ));
+      return JSON.stringify(embeddings.map((e) => (e instanceof Float32Array ? Array.from(e) : e)));
 
     case 'binary':
       return toBinaryV2(embeddings, metadata);
@@ -200,10 +198,7 @@ export function serialize(
  * @param format - Input format: 'json', 'binary', or 'base64'
  * @returns Object with Float32Array[] embeddings and optional metadata (v2 only)
  */
-export function deserialize(
-  data: string | Uint8Array,
-  format: SerializeFormat,
-): DeserializeResult {
+export function deserialize(data: string | Uint8Array, format: SerializeFormat): DeserializeResult {
   switch (format) {
     case 'json': {
       const parsed: number[][] = JSON.parse(data as string);

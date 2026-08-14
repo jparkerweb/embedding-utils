@@ -23,7 +23,7 @@ export async function combineEmbeddings(
   options?: {
     aggregate?: (embeddings: Vector[]) => Float32Array;
     embedOptions?: EmbedOptions;
-  },
+  }
 ): Promise<Float32Array> {
   if (texts.length === 0) {
     throw new ValidationError('texts array must be non-empty');

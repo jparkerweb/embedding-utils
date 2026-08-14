@@ -67,7 +67,7 @@ export const CLUSTERING_PRESETS = {
  * const clusters = clusterEmbeddings(embeddings, getPreset('legacy'));
  */
 export function getPreset(
-  name: 'high-precision' | 'balanced' | 'performance' | 'legacy',
+  name: 'high-precision' | 'balanced' | 'performance' | 'legacy'
 ): ClusteringConfig {
   switch (name) {
     case 'high-precision':

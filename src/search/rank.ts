@@ -12,7 +12,7 @@ import type { SearchOptions, SearchResult, Vector } from '../types';
 export function rankBySimilarity(
   query: Vector,
   corpus: Vector[],
-  options?: SearchOptions,
+  options?: SearchOptions
 ): SearchResult[] {
   if (corpus.length === 0) return [];
   return topK(query, corpus, corpus.length, options);

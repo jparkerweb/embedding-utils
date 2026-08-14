@@ -1,9 +1,4 @@
-import type {
-  EmbeddingProvider,
-  EmbeddingResult,
-  EmbedOptions,
-  CohereConfig,
-} from '../types';
+import type { EmbeddingProvider, EmbeddingResult, EmbedOptions, CohereConfig } from '../types';
 import { ProviderError, ValidationError } from '../types';
 import { toFloat32 } from '../internal/vector-utils';
 import { retryWithBackoff, autoBatch, createTimeoutSignal, wrapTimeoutError } from './shared';
@@ -33,7 +28,7 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
   async function embedBatch(
     batch: string[],
     inputType: string,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<{ embeddings: number[][]; tokens: number }> {
     const fetchSignal = createTimeoutSignal(config.timeout, signal);
     const result = await retryWithBackoff(
@@ -60,32 +55,21 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
           } catch {
             body = response.statusText;
           }
-          throw new ProviderError(
-            `HTTP ${response.status}: ${body}`,
-            'cohere',
-            response.status,
-          );
+          throw new ProviderError(`HTTP ${response.status}: ${body}`, 'cohere', response.status);
         }
 
         try {
-          return await response.json() as CohereEmbeddingResponse;
+          return (await response.json()) as CohereEmbeddingResponse;
         } catch {
-          throw new ProviderError(
-            'Failed to parse API response',
-            'cohere',
-            response.status,
-          );
+          throw new ProviderError('Failed to parse API response', 'cohere', response.status);
         }
       },
       retryConfig,
-      signal,
+      signal
     );
 
     if (!result.embeddings?.float || !Array.isArray(result.embeddings.float)) {
-      throw new ProviderError(
-        'Unexpected API response structure from cohere',
-        'cohere',
-      );
+      throw new ProviderError('Unexpected API response structure from cohere', 'cohere');
     }
 
     const embeddings = result.embeddings.float;
@@ -97,10 +81,7 @@ export function createCohereProvider(config: CohereConfig): EmbeddingProvider {
     name: 'cohere',
     dimensions: config.dimensions ?? null,
 
-    async embed(
-      input: string | string[],
-      options?: EmbedOptions,
-    ): Promise<EmbeddingResult> {
+    async embed(input: string | string[], options?: EmbedOptions): Promise<EmbeddingResult> {
       const inputs = Array.isArray(input) ? input : [input];
       for (const text of inputs) {
         if (text.trim().length === 0) {

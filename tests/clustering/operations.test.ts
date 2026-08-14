@@ -2,10 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { assignToCluster, mergeClusters } from '../../src/clustering/operations';
 import type { Cluster } from '../../src/types';
 
-function makeCluster(
-  members: number[][],
-  labels?: string[],
-): Cluster {
+function makeCluster(members: number[][], labels?: string[]): Cluster {
   const dims = members[0].length;
   const centroid = new Array<number>(dims).fill(0);
   for (const m of members) {
@@ -17,8 +14,14 @@ function makeCluster(
 
 describe('assignToCluster', () => {
   const clusters: Cluster[] = [
-    makeCluster([[1, 0, 0], [0.95, 0.05, 0]]),
-    makeCluster([[0, 1, 0], [0.05, 0.95, 0]]),
+    makeCluster([
+      [1, 0, 0],
+      [0.95, 0.05, 0],
+    ]),
+    makeCluster([
+      [0, 1, 0],
+      [0.05, 0.95, 0],
+    ]),
   ];
 
   it('assigns embedding to most similar cluster', () => {
@@ -54,7 +57,10 @@ describe('assignToCluster', () => {
 
 describe('mergeClusters', () => {
   it('combines members from both clusters', () => {
-    const a = makeCluster([[1, 0, 0], [0.9, 0.1, 0]]);
+    const a = makeCluster([
+      [1, 0, 0],
+      [0.9, 0.1, 0],
+    ]);
     const b = makeCluster([[0.8, 0.2, 0]]);
     const merged = mergeClusters(a, b);
     expect(merged.members).toHaveLength(3);
@@ -71,8 +77,14 @@ describe('mergeClusters', () => {
   });
 
   it('updates cohesion', () => {
-    const a = makeCluster([[1, 0, 0], [0.99, 0.01, 0]]);
-    const b = makeCluster([[0, 1, 0], [0.01, 0.99, 0]]);
+    const a = makeCluster([
+      [1, 0, 0],
+      [0.99, 0.01, 0],
+    ]);
+    const b = makeCluster([
+      [0, 1, 0],
+      [0.01, 0.99, 0],
+    ]);
     const merged = mergeClusters(a, b);
     expect(typeof merged.cohesion).toBe('number');
     // Merged disparate clusters should have lower cohesion

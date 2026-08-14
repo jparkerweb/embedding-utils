@@ -52,12 +52,9 @@ export class TokenBucketRateLimiter {
 
     this.requestTokens = Math.min(
       this.maxRequests,
-      this.requestTokens + this.maxRequests * fraction,
+      this.requestTokens + this.maxRequests * fraction
     );
-    this.tokenBucket = Math.min(
-      this.maxTokens,
-      this.tokenBucket + this.maxTokens * fraction,
-    );
+    this.tokenBucket = Math.min(this.maxTokens, this.tokenBucket + this.maxTokens * fraction);
 
     this.lastRefill = now;
   }

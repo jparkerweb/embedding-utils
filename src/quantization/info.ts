@@ -14,7 +14,7 @@ type QuantizationType = 'fp16' | 'int8' | 'uint8' | 'binary';
 export function estimateMemorySavings(
   dimensions: number,
   count: number,
-  quantizationType: QuantizationType,
+  quantizationType: QuantizationType
 ): {
   originalBytes: number;
   quantizedBytes: number;

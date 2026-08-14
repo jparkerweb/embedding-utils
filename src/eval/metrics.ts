@@ -16,7 +16,7 @@
 export function recallAtK(
   retrieved: string[],
   relevant: Set<string> | string[],
-  k?: number,
+  k?: number
 ): number {
   const relevantSet = relevant instanceof Set ? relevant : new Set(relevant);
   if (relevantSet.size === 0 || retrieved.length === 0) return 0;
@@ -43,7 +43,7 @@ export function recallAtK(
 export function ndcg(
   retrieved: string[],
   relevanceScores: Map<string, number> | Record<string, number>,
-  k?: number,
+  k?: number
 ): number {
   if (retrieved.length === 0) return 0;
 
@@ -87,10 +87,7 @@ export function ndcg(
  * @param relevant - Set or array of relevant item identifiers
  * @returns MRR score in [0, 1]
  */
-export function mrr(
-  retrieved: string[],
-  relevant: Set<string> | string[],
-): number {
+export function mrr(retrieved: string[], relevant: Set<string> | string[]): number {
   const relevantSet = relevant instanceof Set ? relevant : new Set(relevant);
   if (relevantSet.size === 0 || retrieved.length === 0) return 0;
 
@@ -113,7 +110,7 @@ export function mrr(
  */
 export function meanAveragePrecision(
   retrieved: string[],
-  relevant: Set<string> | string[],
+  relevant: Set<string> | string[]
 ): number {
   const relevantSet = relevant instanceof Set ? relevant : new Set(relevant);
   if (relevantSet.size === 0 || retrieved.length === 0) return 0;

@@ -26,9 +26,15 @@ describe('clusterEmbeddings', () => {
 
   it('separates orthogonal embeddings into different clusters', () => {
     const embeddings = [
-      [1, 0, 0], [1, 0, 0], [1, 0, 0],
-      [0, 1, 0], [0, 1, 0], [0, 1, 0],
-      [0, 0, 1], [0, 0, 1], [0, 0, 1],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+      [0, 0, 1],
+      [0, 0, 1],
     ];
     const clusters = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.5,
@@ -40,8 +46,12 @@ describe('clusterEmbeddings', () => {
   it('high threshold creates more clusters', () => {
     // Slightly different vectors that are similar but not identical
     const embeddings = [
-      [1, 0, 0], [0.99, 0.1, 0], [0.98, 0.15, 0],
-      [0, 1, 0], [0.1, 0.99, 0], [0.05, 0.98, 0],
+      [1, 0, 0],
+      [0.99, 0.1, 0],
+      [0.98, 0.15, 0],
+      [0, 1, 0],
+      [0.1, 0.99, 0],
+      [0.05, 0.98, 0],
     ];
     const looseThreshold = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.5,
@@ -56,7 +66,11 @@ describe('clusterEmbeddings', () => {
 
   it('redistributes small clusters into nearest valid cluster', () => {
     const embeddings = [
-      [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
       [0, 1, 0], // only 1 member — too small, redistributed to nearest valid cluster
     ];
     const clusters = clusterEmbeddings(embeddings, {
@@ -70,10 +84,14 @@ describe('clusterEmbeddings', () => {
 
   it('caps clusters at maxClusters by merging most similar', () => {
     const embeddings = [
-      [1, 0, 0], [1, 0, 0],
-      [0, 1, 0], [0, 1, 0],
-      [0, 0, 1], [0, 0, 1],
-      [0.7, 0.7, 0], [0.7, 0.7, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 0, 1],
+      [0, 0, 1],
+      [0.7, 0.7, 0],
+      [0.7, 0.7, 0],
     ];
     const clusters = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.5,
@@ -85,8 +103,12 @@ describe('clusterEmbeddings', () => {
 
   it('supports custom metric option', () => {
     const embeddings = [
-      [1, 0, 0], [1, 0, 0], [1, 0, 0],
-      [0, 1, 0], [0, 1, 0], [0, 1, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
     ];
     const clusters = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.5,
@@ -118,8 +140,12 @@ describe('clusterEmbeddings', () => {
 
   it('populates cohesion field on each cluster', () => {
     const embeddings = [
-      [1, 0, 0], [1, 0, 0], [1, 0, 0],
-      [0, 1, 0], [0, 1, 0], [0, 1, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [1, 0, 0],
+      [0, 1, 0],
+      [0, 1, 0],
+      [0, 1, 0],
     ];
     const clusters = clusterEmbeddings(embeddings, {
       similarityThreshold: 0.5,

@@ -122,9 +122,7 @@ describe('silhouetteScore', () => {
         [0.45, 0.55, 0],
       ]),
     ];
-    expect(silhouetteScore(overlapping)).toBeLessThan(
-      silhouetteScore(wellSeparated),
-    );
+    expect(silhouetteScore(overlapping)).toBeLessThan(silhouetteScore(wellSeparated));
   });
 
   it('works with euclidean metric', () => {

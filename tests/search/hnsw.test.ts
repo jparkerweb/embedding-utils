@@ -170,7 +170,7 @@ describe('HNSWIndex — search accuracy', () => {
       const bfIds = bfResults.map((r) => r.id);
       const overlap = bfIds.filter((id) => hnswIds.has(id)).length;
       expect(overlap).toBeGreaterThanOrEqual(3);
-    },
+    }
   );
 
   it('filter option restricts results', () => {

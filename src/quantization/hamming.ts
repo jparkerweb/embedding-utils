@@ -19,9 +19,7 @@ for (let i = 0; i < 256; i++) {
  */
 export function hammingDistance(a: Uint8Array, b: Uint8Array): number {
   if (a.length !== b.length) {
-    throw new ValidationError(
-      `Vector length mismatch: ${a.length} vs ${b.length}`,
-    );
+    throw new ValidationError(`Vector length mismatch: ${a.length} vs ${b.length}`);
   }
   let distance = 0;
   for (let i = 0; i < a.length; i++) {
@@ -42,10 +40,6 @@ export function hammingDistance(a: Uint8Array, b: Uint8Array): number {
  * @returns Similarity in range [0, 1]
  * @throws {ValidationError} If vectors have different lengths
  */
-export function hammingSimilarity(
-  a: Uint8Array,
-  b: Uint8Array,
-  dimensions: number,
-): number {
+export function hammingSimilarity(a: Uint8Array, b: Uint8Array, dimensions: number): number {
   return 1 - hammingDistance(a, b) / dimensions;
 }

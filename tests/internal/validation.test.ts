@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { validateVector, validateVectorPair, validateEmbeddings } from '../../src/internal/validation';
+import {
+  validateVector,
+  validateVectorPair,
+  validateEmbeddings,
+} from '../../src/internal/validation';
 import { ValidationError, DimensionMismatchError } from '../../src/types';
 
 describe('validateVector', () => {
@@ -57,7 +61,12 @@ describe('validateVectorPair', () => {
 
 describe('validateEmbeddings', () => {
   it('passes for valid embeddings', () => {
-    expect(() => validateEmbeddings([[1, 2], [3, 4]])).not.toThrow();
+    expect(() =>
+      validateEmbeddings([
+        [1, 2],
+        [3, 4],
+      ])
+    ).not.toThrow();
   });
 
   it('throws for empty array', () => {
@@ -65,6 +74,11 @@ describe('validateEmbeddings', () => {
   });
 
   it('throws DimensionMismatchError for mixed dimensions', () => {
-    expect(() => validateEmbeddings([[1, 2], [1, 2, 3]])).toThrow(DimensionMismatchError);
+    expect(() =>
+      validateEmbeddings([
+        [1, 2],
+        [1, 2, 3],
+      ])
+    ).toThrow(DimensionMismatchError);
   });
 });

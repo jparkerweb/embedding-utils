@@ -20,7 +20,7 @@ export function computeScore(a: Vector, b: Vector, metric: SimilarityMetric): nu
     case 'manhattan':
       return 1 / (1 + manhattanDistance(a, b));
     default:
-      throw new ValidationError(`Unknown similarity metric: ${(metric as string)}`);
+      throw new ValidationError(`Unknown similarity metric: ${metric as string}`);
   }
 }
 
@@ -41,6 +41,6 @@ export function computeDistance(a: Vector, b: Vector, metric: SimilarityMetric):
     case 'manhattan':
       return manhattanDistance(a, b);
     default:
-      throw new ValidationError(`Unknown similarity metric: ${(metric as string)}`);
+      throw new ValidationError(`Unknown similarity metric: ${metric as string}`);
   }
 }

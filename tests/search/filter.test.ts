@@ -5,7 +5,7 @@ import { aboveThreshold } from '../../src/search/threshold';
 describe('topK with filter', () => {
   const query = [1, 0, 0];
   const corpus = [
-    [1, 0, 0],     // index 0 (even)
+    [1, 0, 0], // index 0 (even)
     [0.9, 0.1, 0], // index 1 (odd)
     [0.8, 0.2, 0], // index 2 (even)
     [0.7, 0.3, 0], // index 3 (odd)
@@ -48,10 +48,10 @@ describe('topK with filter', () => {
 describe('aboveThreshold with filter', () => {
   const query = [1, 0, 0];
   const corpus = [
-    [1, 0, 0],     // index 0, very high score
+    [1, 0, 0], // index 0, very high score
     [0.95, 0.05, 0], // index 1, high score
-    [0.9, 0.1, 0],   // index 2, high score
-    [0, 1, 0],       // index 3, low score
+    [0.9, 0.1, 0], // index 2, high score
+    [0, 1, 0], // index 3, low score
   ];
 
   it('filters out even indices', () => {

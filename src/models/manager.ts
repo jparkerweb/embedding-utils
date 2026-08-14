@@ -49,7 +49,7 @@ export function getModelInfo(modelId: string): ModelInfo | undefined {
  */
 export async function downloadModel(
   modelId: string,
-  options?: { cacheDir?: string },
+  options?: { cacheDir?: string }
 ): Promise<string> {
   const transformers = await import('@huggingface/transformers');
   const cacheDir = options?.cacheDir ?? getDefaultCacheDir();
@@ -108,10 +108,7 @@ export async function listModels(cacheDir?: string): Promise<ModelInfo[]> {
  * @example
  * await deleteModel('Xenova/all-MiniLM-L6-v2');
  */
-export async function deleteModel(
-  modelId: string,
-  cacheDir?: string,
-): Promise<void> {
+export async function deleteModel(modelId: string, cacheDir?: string): Promise<void> {
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
   const dir = cacheDir ?? getDefaultCacheDir();

@@ -99,7 +99,7 @@ export function createLRUCache(options?: CacheOptions): CacheProvider {
  */
 export async function warmCache(
   cache: CacheProvider,
-  data: Array<{ key: string; value: Float32Array[] }>,
+  data: Array<{ key: string; value: Float32Array[] }>
 ): Promise<void> {
   for (const entry of data) {
     await cache.set(entry.key, entry.value);

@@ -22,12 +22,26 @@ function createMockProvider(dims = 8): EmbeddingProvider {
         const vec = new Float32Array(dims);
         // Create separable embeddings based on topic prefixes
         const lower = text.toLowerCase();
-        if (lower.includes('machine learning') || lower.includes('neural') || lower.includes('ai')) {
-          vec[0] = 0.9; vec[1] = 0.3; vec[2] = 0.1;
-        } else if (lower.includes('cooking') || lower.includes('recipe') || lower.includes('pasta')) {
-          vec[3] = 0.9; vec[4] = 0.3; vec[5] = 0.1;
+        if (
+          lower.includes('machine learning') ||
+          lower.includes('neural') ||
+          lower.includes('ai')
+        ) {
+          vec[0] = 0.9;
+          vec[1] = 0.3;
+          vec[2] = 0.1;
+        } else if (
+          lower.includes('cooking') ||
+          lower.includes('recipe') ||
+          lower.includes('pasta')
+        ) {
+          vec[3] = 0.9;
+          vec[4] = 0.3;
+          vec[5] = 0.1;
         } else if (lower.includes('space') || lower.includes('planet') || lower.includes('nasa')) {
-          vec[0] = 0.1; vec[1] = 0.9; vec[6] = 0.3;
+          vec[0] = 0.1;
+          vec[1] = 0.9;
+          vec[6] = 0.3;
         } else {
           // Hash-based fallback
           let h = 0;
@@ -78,7 +92,9 @@ describe('integration: embed → HNSW → search → evaluate', () => {
     expect(hnsw.size).toBe(texts.length);
 
     // Query for AI-related content
-    const { embeddings: [queryVec] } = await provider.embed('ai and machine learning');
+    const {
+      embeddings: [queryVec],
+    } = await provider.embed('ai and machine learning');
 
     // HNSW search
     const hnswResults = hnsw.search(queryVec, { topK: 3 });
@@ -203,7 +219,9 @@ describe('integration: pipeline → store → search', () => {
     }
 
     // Search
-    const { embeddings: [queryVec] } = await provider.embed('ai and machine learning');
+    const {
+      embeddings: [queryVec],
+    } = await provider.embed('ai and machine learning');
     const results = index.search(queryVec, { topK: 2 });
 
     expect(results.length).toBe(2);
@@ -258,7 +276,9 @@ A recipe for making delicious Italian pasta from scratch.
     }
 
     // Search for AI-related content
-    const { embeddings: [queryVec] } = await provider.embed('neural network ai learning');
+    const {
+      embeddings: [queryVec],
+    } = await provider.embed('neural network ai learning');
     const results = index.search(queryVec, { topK: 3 });
 
     expect(results.length).toBeGreaterThan(0);

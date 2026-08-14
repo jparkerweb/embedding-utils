@@ -1,17 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import {
-  batchIncrementalAverage,
-  averageEmbeddings,
-} from '../../src/aggregation/average';
+import { batchIncrementalAverage, averageEmbeddings } from '../../src/aggregation/average';
 import { ValidationError } from '../../src/types';
 
 describe('batchIncrementalAverage', () => {
   it('produces result equivalent to full re-average for a batch of 10 vectors', () => {
-    const vectors = Array.from({ length: 10 }, (_, i) => [
-      Math.sin(i),
-      Math.cos(i),
-      i * 0.1,
-    ]);
+    const vectors = Array.from({ length: 10 }, (_, i) => [Math.sin(i), Math.cos(i), i * 0.1]);
     const fullAvg = averageEmbeddings(vectors);
 
     // Incrementally: start with first vector, then batch the remaining 9
@@ -43,14 +36,19 @@ describe('batchIncrementalAverage', () => {
 
   it('throws ValidationError for dimension mismatch across batch items', () => {
     expect(() =>
-      batchIncrementalAverage([1, 2, 3], [[4, 5, 6], [7, 8]], 1),
+      batchIncrementalAverage(
+        [1, 2, 3],
+        [
+          [4, 5, 6],
+          [7, 8],
+        ],
+        1
+      )
     ).toThrow(ValidationError);
   });
 
   it('throws ValidationError when batch item dimension mismatches currentAvg', () => {
-    expect(() =>
-      batchIncrementalAverage([1, 2], [[3, 4, 5]], 1),
-    ).toThrow(ValidationError);
+    expect(() => batchIncrementalAverage([1, 2], [[3, 4, 5]], 1)).toThrow(ValidationError);
   });
 
   it('returns the blended value for a single-item batch', () => {

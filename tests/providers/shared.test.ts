@@ -42,32 +42,26 @@ describe('retryWithBackoff', () => {
   });
 
   it('should NOT retry on 4xx (except 429)', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValue(new ProviderError('bad request', 'test', 400));
+    const fn = vi.fn().mockRejectedValue(new ProviderError('bad request', 'test', 400));
 
-    await expect(
-      retryWithBackoff(fn, { maxRetries: 3, baseDelay: 1 }),
-    ).rejects.toThrow('bad request');
+    await expect(retryWithBackoff(fn, { maxRetries: 3, baseDelay: 1 })).rejects.toThrow(
+      'bad request'
+    );
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('should NOT retry on non-ProviderError', async () => {
     const fn = vi.fn().mockRejectedValue(new Error('unknown'));
 
-    await expect(
-      retryWithBackoff(fn, { maxRetries: 3, baseDelay: 1 }),
-    ).rejects.toThrow('unknown');
+    await expect(retryWithBackoff(fn, { maxRetries: 3, baseDelay: 1 })).rejects.toThrow('unknown');
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('should respect maxRetries', async () => {
-    const fn = vi
-      .fn()
-      .mockRejectedValue(new ProviderError('server error', 'test', 500));
+    const fn = vi.fn().mockRejectedValue(new ProviderError('server error', 'test', 500));
 
     await expect(
-      retryWithBackoff(fn, { maxRetries: 2, baseDelay: 1, maxDelay: 10 }),
+      retryWithBackoff(fn, { maxRetries: 2, baseDelay: 1, maxDelay: 10 })
     ).rejects.toThrow('server error');
     // Initial call + 2 retries = 3 total
     expect(fn).toHaveBeenCalledTimes(3);
@@ -121,7 +115,7 @@ describe('retryWithBackoff', () => {
     });
 
     await expect(
-      retryWithBackoff(fn, { maxRetries: 3, baseDelay: 1 }, controller.signal),
+      retryWithBackoff(fn, { maxRetries: 3, baseDelay: 1 }, controller.signal)
     ).rejects.toThrow(/abort/i);
 
     vi.restoreAllMocks();
@@ -171,7 +165,10 @@ describe('autoBatch', () => {
     });
 
     const result = await autoBatch(['a', 'b'], 10, fn);
-    expect(result).toEqual([[1, 2], [1, 2]]);
+    expect(result).toEqual([
+      [1, 2],
+      [1, 2],
+    ]);
     expect(fn).toHaveBeenCalledTimes(1);
   });
 

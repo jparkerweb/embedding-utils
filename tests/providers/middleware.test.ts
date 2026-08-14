@@ -2,7 +2,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { withCache } from '../../src/providers/middleware';
 import type { EmbeddingProvider, EmbeddingResult } from '../../src/types';
 
-function createMockProvider(embeddings: number[][] = [[0.1, 0.2, 0.3]]): EmbeddingProvider & { embedCalls: number } {
+function createMockProvider(
+  embeddings: number[][] = [[0.1, 0.2, 0.3]]
+): EmbeddingProvider & { embedCalls: number } {
   const mock = {
     name: 'mock',
     dimensions: 3,
@@ -102,7 +104,10 @@ describe('withCache', () => {
   });
 
   it('handles array input', async () => {
-    const provider = createMockProvider([[0.1, 0.2], [0.3, 0.4]]);
+    const provider = createMockProvider([
+      [0.1, 0.2],
+      [0.3, 0.4],
+    ]);
     const cached = withCache(provider);
 
     await cached.embed(['hello', 'world']);

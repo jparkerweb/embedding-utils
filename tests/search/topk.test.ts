@@ -5,10 +5,10 @@ import { ValidationError } from '../../src/types';
 describe('topK', () => {
   const query = [1, 0, 0];
   const corpus = [
-    [1, 0, 0],    // identical to query
-    [0, 1, 0],    // orthogonal
+    [1, 0, 0], // identical to query
+    [0, 1, 0], // orthogonal
     [0.9, 0.1, 0], // very similar
-    [-1, 0, 0],   // opposite
+    [-1, 0, 0], // opposite
   ];
 
   it('returns k most similar embeddings in descending order', () => {

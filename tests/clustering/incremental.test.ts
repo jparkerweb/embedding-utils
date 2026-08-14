@@ -71,8 +71,12 @@ describe('IncrementalClusterer', () => {
   it('addBatch adds multiple embeddings', () => {
     const clusterer = new IncrementalClusterer({ similarityThreshold: 0.8 });
     clusterer.addBatch(
-      [[1, 0, 0], [0.99, 0.01, 0], [0, 1, 0]],
-      ['a', 'b', 'c'],
+      [
+        [1, 0, 0],
+        [0.99, 0.01, 0],
+        [0, 1, 0],
+      ],
+      ['a', 'b', 'c']
     );
     expect(clusterer.size).toBe(3);
     const clusters = clusterer.getClusters();

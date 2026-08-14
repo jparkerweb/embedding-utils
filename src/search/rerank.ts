@@ -15,7 +15,7 @@ export function rerankResults(
   options?: {
     metric?: SimilarityMetric;
     weights?: { original?: number; rerank?: number };
-  },
+  }
 ): Array<{ index: number; score: number }> {
   const metric = options?.metric ?? 'cosine';
   const originalWeight = options?.weights?.original ?? 0.5;
@@ -23,7 +23,8 @@ export function rerankResults(
 
   const reranked = results.map((result) => ({
     index: result.index,
-    score: originalWeight * result.score + rerankWeight * computeScore(query, result.embedding, metric),
+    score:
+      originalWeight * result.score + rerankWeight * computeScore(query, result.embedding, metric),
   }));
 
   reranked.sort((a, b) => b.score - a.score);

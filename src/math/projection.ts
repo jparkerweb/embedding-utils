@@ -52,11 +52,11 @@ function gaussianRandom(rng: () => number): number {
 export function createRandomProjection(
   sourceDims: number,
   targetDims: number,
-  options?: { seed?: number },
+  options?: { seed?: number }
 ): RandomProjector {
   if (targetDims > sourceDims) {
     throw new ValidationError(
-      `targetDims (${targetDims}) must not exceed sourceDims (${sourceDims})`,
+      `targetDims (${targetDims}) must not exceed sourceDims (${sourceDims})`
     );
   }
   if (sourceDims <= 0 || targetDims <= 0) {

@@ -6,20 +6,30 @@ import { DimensionMismatchError, ValidationError } from '../../src/types';
 
 describe('Search dimension validation', () => {
   const query3d = [1, 0, 0];
-  const corpus2d = [[1, 0], [0, 1]];
+  const corpus2d = [
+    [1, 0],
+    [0, 1],
+  ];
 
   it('topK throws DimensionMismatchError for mismatched query/corpus', () => {
     expect(() => topK(query3d, corpus2d, 1)).toThrow(DimensionMismatchError);
-    expect(() => topK(query3d, corpus2d, 1)).toThrow(/Query dimension \(3\) does not match corpus dimension \(2\)/);
+    expect(() => topK(query3d, corpus2d, 1)).toThrow(
+      /Query dimension \(3\) does not match corpus dimension \(2\)/
+    );
   });
 
   it('aboveThreshold throws DimensionMismatchError for mismatched query/corpus', () => {
     expect(() => aboveThreshold(query3d, corpus2d, 0.5)).toThrow(DimensionMismatchError);
-    expect(() => aboveThreshold(query3d, corpus2d, 0.5)).toThrow(/Query dimension \(3\) does not match corpus dimension \(2\)/);
+    expect(() => aboveThreshold(query3d, corpus2d, 0.5)).toThrow(
+      /Query dimension \(3\) does not match corpus dimension \(2\)/
+    );
   });
 
   it('similarityMatrix throws DimensionMismatchError for mixed dimensions', () => {
-    const mixed = [[1, 0, 0], [1, 0]];
+    const mixed = [
+      [1, 0, 0],
+      [1, 0],
+    ];
     expect(() => similarityMatrix(mixed)).toThrow(DimensionMismatchError);
   });
 
@@ -36,7 +46,10 @@ describe('Search dimension validation', () => {
 
 describe('Search parameter validation', () => {
   const query = [1, 0, 0];
-  const corpus = [[1, 0, 0], [0, 1, 0]];
+  const corpus = [
+    [1, 0, 0],
+    [0, 1, 0],
+  ];
 
   it('topK throws ValidationError for k = 0', () => {
     expect(() => topK(query, corpus, 0)).toThrow(ValidationError);
@@ -58,7 +71,9 @@ describe('Search parameter validation', () => {
 
   it('aboveThreshold throws ValidationError for Infinity threshold', () => {
     expect(() => aboveThreshold(query, corpus, Infinity)).toThrow(ValidationError);
-    expect(() => aboveThreshold(query, corpus, Infinity)).toThrow(/threshold must be a finite number/);
+    expect(() => aboveThreshold(query, corpus, Infinity)).toThrow(
+      /threshold must be a finite number/
+    );
   });
 
   it('aboveThreshold throws ValidationError for NaN threshold', () => {

@@ -226,10 +226,7 @@ export class HNSWIndex {
   }
 
   /** Search for the most similar items to a query vector. */
-  search(
-    query: Vector,
-    options?: HNSWSearchOptions,
-  ): Array<StoredItem & { score: number }> {
+  search(query: Vector, options?: HNSWSearchOptions): Array<StoredItem & { score: number }> {
     const topK = options?.topK ?? 10;
     const efSearch = options?.efSearch ?? 50;
     const filter = options?.filter;
@@ -353,11 +350,15 @@ export class HNSWIndex {
       }
 
       const nodeSize =
-        4 + idBytes.length + // id
-        4 + metaBytes.length + // metadata
-        4 + vectorBytes + // vector
+        4 +
+        idBytes.length + // id
+        4 +
+        metaBytes.length + // metadata
+        4 +
+        vectorBytes + // vector
         4 + // level
-        4 + layerByteLen; // layers
+        4 +
+        layerByteLen; // layers
 
       const buf = new ArrayBuffer(nodeSize);
       const view = new DataView(buf);
@@ -380,7 +381,9 @@ export class HNSWIndex {
       // Vector
       view.setUint32(offset, vectorBytes, true);
       offset += 4;
-      new Uint8Array(buf, offset, vectorBytes).set(new Uint8Array(node.vector.buffer, node.vector.byteOffset, vectorBytes));
+      new Uint8Array(buf, offset, vectorBytes).set(
+        new Uint8Array(node.vector.buffer, node.vector.byteOffset, vectorBytes)
+      );
       offset += vectorBytes;
 
       // Level
@@ -591,7 +594,7 @@ export class HNSWIndex {
     query: Float32Array,
     entryPointIdx: number,
     ef: number,
-    layer: number,
+    layer: number
   ): ScoredIndex[] {
     const entryNode = this.nodes[entryPointIdx];
     if (!entryNode || !entryNode.neighbors.has(layer)) {

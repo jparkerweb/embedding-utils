@@ -1,8 +1,4 @@
-import type {
-  EmbeddingStoreConfig,
-  StoredItem,
-  Vector,
-} from '../types';
+import type { EmbeddingStoreConfig, StoredItem, Vector } from '../types';
 import { SearchIndex } from '../search/search-index';
 import { withCache } from '../providers/middleware';
 
@@ -17,16 +13,18 @@ export interface EmbeddingStore {
   /** Embed text and store the result with an ID and optional metadata. */
   add(id: string, text: string, metadata?: Record<string, unknown>): Promise<void>;
   /** Batch embed and store multiple items. */
-  addBatch(items: Array<{ id: string; text: string; metadata?: Record<string, unknown> }>): Promise<void>;
+  addBatch(
+    items: Array<{ id: string; text: string; metadata?: Record<string, unknown> }>
+  ): Promise<void>;
   /** Embed query text and search for similar items. */
   search(
     query: string,
-    options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean },
+    options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean }
   ): Promise<Array<StoredItem & { score: number }>>;
   /** Search by a pre-computed embedding vector. */
   searchByEmbedding(
     embedding: Vector,
-    options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean },
+    options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean }
   ): Array<StoredItem & { score: number }>;
   /** Remove an item by ID. */
   remove(id: string): boolean;
@@ -52,9 +50,7 @@ export interface EmbeddingStore {
  * const results = await store.search('greeting', { topK: 5 });
  */
 export function createEmbeddingStore(config: EmbeddingStoreConfig): EmbeddingStore {
-  const provider = config.cache
-    ? withCache(config.provider, config.cache)
-    : config.provider;
+  const provider = config.cache ? withCache(config.provider, config.cache) : config.provider;
 
   const index = new SearchIndex({ metric: config.metric });
 
@@ -65,7 +61,7 @@ export function createEmbeddingStore(config: EmbeddingStoreConfig): EmbeddingSto
     },
 
     async addBatch(
-      items: Array<{ id: string; text: string; metadata?: Record<string, unknown> }>,
+      items: Array<{ id: string; text: string; metadata?: Record<string, unknown> }>
     ): Promise<void> {
       const texts = items.map((item) => item.text);
       const result = await provider.embed(texts);
@@ -76,7 +72,7 @@ export function createEmbeddingStore(config: EmbeddingStoreConfig): EmbeddingSto
 
     async search(
       query: string,
-      options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean },
+      options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean }
     ): Promise<Array<StoredItem & { score: number }>> {
       const result = await provider.embed(query);
       return index.search(result.embeddings[0], options);
@@ -84,7 +80,7 @@ export function createEmbeddingStore(config: EmbeddingStoreConfig): EmbeddingSto
 
     searchByEmbedding(
       embedding: Vector,
-      options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean },
+      options?: { topK?: number; threshold?: number; filter?: (item: StoredItem) => boolean }
     ): Array<StoredItem & { score: number }> {
       return index.search(embedding, options);
     },

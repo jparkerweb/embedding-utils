@@ -23,11 +23,17 @@ export class SearchIndex {
 
   /** Add a single item. Overwrites if ID already exists. */
   add(id: string, embedding: Vector, metadata?: Record<string, unknown>): void {
-    this.items.set(id, { id, embedding: toFloat32(embedding), ...(metadata !== undefined ? { metadata } : {}) });
+    this.items.set(id, {
+      id,
+      embedding: toFloat32(embedding),
+      ...(metadata !== undefined ? { metadata } : {}),
+    });
   }
 
   /** Add multiple items at once. */
-  addBatch(items: Array<{ id: string; embedding: Vector; metadata?: Record<string, unknown> }>): void {
+  addBatch(
+    items: Array<{ id: string; embedding: Vector; metadata?: Record<string, unknown> }>
+  ): void {
     for (const item of items) {
       this.add(item.id, item.embedding, item.metadata);
     }
@@ -45,7 +51,7 @@ export class SearchIndex {
       topK?: number;
       threshold?: number;
       filter?: (item: StoredItem) => boolean;
-    },
+    }
   ): Array<StoredItem & { score: number }> {
     const topK = options?.topK ?? 10;
     const threshold = options?.threshold;

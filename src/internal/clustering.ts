@@ -23,10 +23,7 @@ export function computeCentroid(members: Vector[]): Float32Array {
  * Computes the average pairwise similarity among members.
  * @internal
  */
-export function computePairwiseCohesion(
-  members: Vector[],
-  metric: SimilarityMetric,
-): number {
+export function computePairwiseCohesion(members: Vector[], metric: SimilarityMetric): number {
   if (members.length <= 1) return 1.0;
   let totalSim = 0;
   let pairs = 0;

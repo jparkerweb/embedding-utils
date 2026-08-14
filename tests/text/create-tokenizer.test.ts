@@ -34,7 +34,9 @@ describe('createTokenizer (real load)', () => {
     beforeAll(async () => {
       const { AutoTokenizer } = await import('@huggingface/transformers');
       const autoTok = await AutoTokenizer.from_pretrained(MODEL);
-      reference = FIXED_STRINGS.map((s) => (autoTok(s) as { input_ids: { size: number } }).input_ids.size);
+      reference = FIXED_STRINGS.map(
+        (s) => (autoTok(s) as { input_ids: { size: number } }).input_ids.size
+      );
 
       tok = createTokenizer(MODEL);
       await tok.load();

@@ -225,8 +225,10 @@ Content another.`;
 
 describe('chunkByStructure — maxTokens and overlap', () => {
   it('respects maxTokens limit (no chunk exceeds it except code blocks)', () => {
-    const paragraphs = Array.from({ length: 10 }, (_, i) =>
-      `Paragraph ${i} has several words that add up to a meaningful amount of content here.`,
+    const paragraphs = Array.from(
+      { length: 10 },
+      (_, i) =>
+        `Paragraph ${i} has several words that add up to a meaningful amount of content here.`
     ).join('\n\n');
     const md = `# Section\n\n${paragraphs}`;
     const chunks = chunkByStructure(md, { maxTokens: 20 });
@@ -241,8 +243,9 @@ describe('chunkByStructure — maxTokens and overlap', () => {
   });
 
   it('produces overlapping text when overlap option is set', () => {
-    const sentences = Array.from({ length: 20 }, (_, i) =>
-      `Sentence number ${i} contains some words.`,
+    const sentences = Array.from(
+      { length: 20 },
+      (_, i) => `Sentence number ${i} contains some words.`
     ).join(' ');
     const md = `# Section\n\n${sentences}`;
     const chunks = chunkByStructure(md, { maxTokens: 30, overlap: 10 });

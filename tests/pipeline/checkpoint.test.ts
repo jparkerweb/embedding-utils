@@ -23,7 +23,7 @@ function createMockProvider(dims: number = 3): EmbeddingProvider & { callLog: st
 }
 
 function createInMemoryCheckpoint(
-  initialState: CheckpointState | null = null,
+  initialState: CheckpointState | null = null
 ): CheckpointAdapter & { saved: CheckpointState[]; loadCalls: number } {
   const adapter = {
     state: initialState,
