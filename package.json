@@ -65,16 +65,21 @@
       "optional": true
     }
   },
+  "overrides": {
+    "sharp": "^0.35.3",
+    "adm-zip": "^0.6.0",
+    "esbuild": "0.27.2"
+  },
   "devDependencies": {
     "@huggingface/transformers": "^4.2.0",
-    "@types/node": "^25.9.1",
-    "@typescript-eslint/eslint-plugin": "^8.60.0",
-    "@typescript-eslint/parser": "^8.60.0",
-    "@vitest/coverage-v8": "^4.1.7",
-    "eslint": "^10.4.0",
-    "prettier": "^3.8.3",
+    "@types/node": "^25.9.5",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "@vitest/coverage-v8": "^4.1.10",
+    "eslint": "^10.8.1",
+    "prettier": "^3.9.6",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.7"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
   }
 }
