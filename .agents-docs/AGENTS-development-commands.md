@@ -11,6 +11,9 @@
 | `npm run test:coverage` | Vitest with v8 coverage (`text` + `lcov`). |
 | `npm run lint` | ESLint over `src/`. |
 | `npm run format` | Prettier write over `src/**/*.ts` and `tests/**/*.ts`. |
+| `npm run format:check` | Prettier check (no writes) — use in CI. |
+
+Glob arguments in the `format` scripts must use **double** quotes. Single quotes are not stripped by `cmd`/PowerShell, so prettier receives the literal glob, matches nothing, and the script silently succeeds as a no-op on Windows.
 
 ## Running a single test
 
